@@ -1,0 +1,26 @@
+{
+  "api": "GET /api/role/permission-list",
+  "cases": [
+    {
+      "name": "list permissions by page",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "GET",
+      "path": "/api/role/permission-list?page=1&page_size=20",
+      "expect_status": 200,
+      "expect_business_status": 0,
+      "expect_field": {
+        "status": 0
+      }
+    },
+    {
+      "name": "list permissions rejects invalid pagination",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "GET",
+      "path": "/api/role/permission-list?page=0&page_size=101",
+      "expect_status": 200,
+      "expect_business_status": 2151
+    }
+  ]
+}

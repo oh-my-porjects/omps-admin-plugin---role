@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -197,6 +198,9 @@ type RolePlugin struct {
 	broadcast func(ctx context.Context, userIDs []string, code string, data any) ([]int64, error)
 	isOnline  func(userID string) bool
 
+	runtimeAddr string
+	adminAPIKey string
+
 	mu          sync.Mutex
 	roles       map[string]roleRecord
 	permissions map[string]permissionRecord
@@ -223,6 +227,8 @@ func (p *RolePlugin) Init(ctx PluginContext) error {
 	p.emit = ctx.Emit
 	p.broadcast = ctx.Broadcast
 	p.isOnline = ctx.IsOnline
+	p.runtimeAddr = ctx.Config["RUNTIME_ADDR"]
+	p.adminAPIKey = ctx.Config["ADMIN_API_KEY"]
 	// 仅登录模块需要：把鉴权回调注册给 runtime；普通业务模块这一行可删
 	p.registerAuthIfLoginModule(ctx)
 	// 建表、读 config；不要建 mux 或注册路由
@@ -233,6 +239,20 @@ func (p *RolePlugin) Init(ctx PluginContext) error {
 	// 后台 worker 启动示例（见文件顶部 PluginContext 注释）：
 	//   go p.runTicker()
 	return nil
+}
+
+func (p *RolePlugin) runtimeURL(r *http.Request, path string) string {
+	host := p.runtimeAddr
+	if host == "" && r != nil {
+		host = r.Host
+	}
+	if host == "" || host == "example.com" {
+		host = "127.0.0.1:8080"
+	}
+	if strings.Contains(host, "://") {
+		return strings.TrimRight(host, "/") + path
+	}
+	return "http://" + strings.TrimRight(host, "/") + path
 }
 
 // Shutdown 插件优雅关闭

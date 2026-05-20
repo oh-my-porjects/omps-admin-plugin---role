@@ -25,6 +25,7 @@ func roleToResponse(role roleRecord, parentName string) roleResponse {
 	if role.ParentID != "" {
 		parentID := role.ParentID
 		resp.ParentID = &parentID
+		resp.ParentRoleID = parentID
 	}
 	return resp
 }

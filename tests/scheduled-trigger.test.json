@@ -1,0 +1,31 @@
+{
+  "api": "POST /_internal/scheduled-trigger/role",
+  "cases": [
+    {
+      "name": "scheduled trigger rejects external request",
+      "actor": "anonymous",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/_internal/scheduled-trigger/role",
+      "body": {
+        "task_name": "missing_task"
+      },
+      "expect_status": 401
+    },
+    {
+      "name": "scheduled trigger accepts internal token and reports missing task",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/_internal/scheduled-trigger/role",
+      "headers": {
+        "X-Internal-Token": "${internal_token}"
+      },
+      "body": {
+        "task_name": "missing_task"
+      },
+      "expect_status": 404,
+      "timeout_ms": 3000
+    }
+  ]
+}

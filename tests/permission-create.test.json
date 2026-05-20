@@ -1,0 +1,35 @@
+{
+  "api": "POST /api/role/permission-create",
+  "cases": [
+    {
+      "name": "create permission",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/api/role/permission-create",
+      "body": {
+        "code": "${range_tag}perm_${rand:8}",
+        "name": "${range_tag}Perm ${rand:6}",
+        "description": "${range_tag}created permission"
+      },
+      "expect_status": 200,
+      "expect_business_status": 0,
+      "side_effect_tables": ["role_permissions"]
+    },
+    {
+      "name": "create permission rejects invalid code",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/api/role/permission-create",
+      "body": {
+        "code": "NO SPACE",
+        "name": "${range_tag}Bad Perm",
+        "description": "${range_tag}bad permission"
+      },
+      "expect_status": 200,
+      "expect_business_status": 2141,
+      "side_effect_tables": ["role_permissions"]
+    }
+  ]
+}

@@ -25,15 +25,17 @@ type permissionRecord struct {
 }
 
 type roleResponse struct {
-	RoleID      string               `json:"role_id"`
-	Name        string               `json:"name"`
-	ParentID    *string              `json:"parent_id"`
-	ParentName  string               `json:"parent_name"`
-	Status      string               `json:"status"`
-	Description string               `json:"description"`
-	CreatedAt   string               `json:"created_at,omitempty"`
-	UpdatedAt   string               `json:"updated_at,omitempty"`
-	Permissions []permissionResponse `json:"permissions"`
+	RoleID        string               `json:"role_id"`
+	Name          string               `json:"name"`
+	ParentID      *string              `json:"parent_id"`
+	ParentRoleID  string               `json:"parent_role_id"`
+	ParentName    string               `json:"parent_name"`
+	Status        string               `json:"status"`
+	Description   string               `json:"description"`
+	CreatedAt     string               `json:"created_at,omitempty"`
+	UpdatedAt     string               `json:"updated_at,omitempty"`
+	Permissions   []permissionResponse `json:"permissions"`
+	PermissionIDs []string             `json:"permission_ids,omitempty"`
 }
 
 type permissionResponse struct {

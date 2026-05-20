@@ -1,0 +1,26 @@
+{
+  "api": "GET /api/role/detail",
+  "cases": [
+    {
+      "name": "get root role detail",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "GET",
+      "path": "/api/role/detail?role_id=00000000-0000-0000-0000-000000000001",
+      "expect_status": 200,
+      "expect_business_status": 0,
+      "expect_field": {
+        "data.role_id": "00000000-0000-0000-0000-000000000001"
+      }
+    },
+    {
+      "name": "get missing role detail fails",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "GET",
+      "path": "/api/role/detail?role_id=99999999-9999-9999-9999-999999999999",
+      "expect_status": 200,
+      "expect_business_status": 2122
+    }
+  ]
+}

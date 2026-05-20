@@ -1,0 +1,35 @@
+{
+  "api": "POST /api/role/check-permission",
+  "cases": [
+    {
+      "name": "check existing direct permission",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/api/role/check-permission",
+      "body": {
+        "role_id": "00000000-0000-0000-0000-000000000001",
+        "permission_code": "system.manage"
+      },
+      "expect_status": 200,
+      "expect_business_status": 0,
+      "expect_field": {
+        "data.allowed": true,
+        "data.role_status": "enabled"
+      }
+    },
+    {
+      "name": "check permission for missing role fails",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/api/role/check-permission",
+      "body": {
+        "role_id": "99999999-9999-9999-9999-999999999999",
+        "permission_code": "system.manage"
+      },
+      "expect_status": 200,
+      "expect_business_status": 2173
+    }
+  ]
+}

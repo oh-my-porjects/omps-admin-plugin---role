@@ -2,14 +2,24 @@
   "api": "GET /api/role/hello",
   "cases": [
     {
-      "name": "hello 正常返回 status=0 + module/version 字段",
-      "kind": "http",
+      "name": "hello returns module metadata",
       "actor": "anonymous",
+      "depends_on": [],
+      "method": "GET",
+      "path": "/api/role/hello",
       "expect_status": 200,
       "expect_field": {
         "status": 0,
         "data.module": "role"
       }
+    },
+    {
+      "name": "hello rejects unsupported method",
+      "actor": "anonymous",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/api/role/hello",
+      "expect_status": 405
     }
   ]
 }

@@ -43,6 +43,52 @@ func (p *RolePlugin) createRole(ctx context.Context, name, parentID, description
 	return role, nil
 }
 
+func (p *RolePlugin) createRoleWithPermissions(ctx context.Context, name, parentID, description, status string, permissionIDs []string) (roleRecord, error) {
+	if p.db != nil {
+		tx, err := p.db.BeginTx(ctx, nil)
+		if err != nil {
+			return roleRecord{}, err
+		}
+		defer tx.Rollback()
+		var role roleRecord
+		var parent sql.NullString
+		if parentID != "" {
+			parent = sql.NullString{String: parentID, Valid: true}
+		}
+		if err := tx.QueryRowContext(ctx, `
+			INSERT INTO role_roles (name, parent_id, description, status)
+			VALUES ($1, $2, $3, $4)
+			RETURNING id::text, name, COALESCE(parent_id::text, ''), description, status, created_at, updated_at`,
+			name, parent, description, status).Scan(&role.ID, &role.Name, &role.ParentID, &role.Description, &role.Status, &role.CreatedAt, &role.UpdatedAt); err != nil {
+			return roleRecord{}, err
+		}
+		for _, permissionID := range permissionIDs {
+			if _, err := tx.ExecContext(ctx, "INSERT INTO role_role_permissions (role_id, permission_id) VALUES ($1, $2)", role.ID, permissionID); err != nil {
+				return roleRecord{}, err
+			}
+		}
+		if err := tx.Commit(); err != nil {
+			return roleRecord{}, err
+		}
+		return role, nil
+	}
+	p.ensureMemoryStore()
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	now := time.Now().UTC()
+	role := roleRecord{ID: newUUIDLikeID(), Name: name, ParentID: parentID, Description: description, Status: status, CreatedAt: now, UpdatedAt: now}
+	set := map[string]bool{}
+	for _, id := range permissionIDs {
+		if _, exists := p.permissions[id]; !exists {
+			return roleRecord{}, errors.New("permission not found")
+		}
+		set[id] = true
+	}
+	p.roles[role.ID] = role
+	p.rolePerms[role.ID] = set
+	return role, nil
+}
+
 func (p *RolePlugin) updateRole(ctx context.Context, role roleRecord) (roleRecord, error) {
 	role.UpdatedAt = time.Now().UTC()
 	if p.db != nil {

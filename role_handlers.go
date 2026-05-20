@@ -7,49 +7,118 @@ import (
 
 func (p *RolePlugin) handleRoleCreate(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Name        string `json:"name"`
-		ParentID    string `json:"parent_id"`
-		Description string `json:"description"`
-		Status      string `json:"status"`
+		Name          string   `json:"name"`
+		ParentID      string   `json:"parent_id"`
+		ParentRoleID  string   `json:"parent_role_id"`
+		Description   string   `json:"description"`
+		Status        string   `json:"status"`
+		PermissionIDs []string `json:"permission_ids"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
-		writeJSON(w, 2101, nil, "请求体解析失败: "+err.Error())
+		writeJSON(w, 4101, nil, "请求体解析失败: "+err.Error())
 		return
 	}
 	req.Name = strings.TrimSpace(req.Name)
 	req.ParentID = strings.TrimSpace(req.ParentID)
+	req.ParentRoleID = strings.TrimSpace(req.ParentRoleID)
 	req.Description = strings.TrimSpace(req.Description)
 	req.Status = strings.TrimSpace(req.Status)
+	if req.ParentRoleID != "" {
+		req.ParentID = req.ParentRoleID
+	}
 	if !validName(req.Name) {
-		writeJSON(w, 2101, nil, "角色名称缺失或长度不合法")
+		writeJSON(w, 4101, nil, "角色名称缺失或长度不合法")
 		return
 	}
 	if !validStatus(req.Status) {
-		writeJSON(w, 2102, nil, "角色状态不合法")
+		writeJSON(w, 4101, nil, "角色状态不合法")
 		return
 	}
 	if runeLen(req.Description) > 200 {
-		writeJSON(w, 2101, nil, "角色说明过长")
+		writeJSON(w, 4101, nil, "角色说明过长")
 		return
 	}
 	if req.ParentID != "" && !validUUID(req.ParentID) {
-		writeJSON(w, 2103, nil, "父角色不存在")
+		writeJSON(w, 4101, nil, "父级角色 ID 参数格式非法")
 		return
 	}
-	if req.ParentID != "" && !p.roleExists(r.Context(), req.ParentID) {
-		writeJSON(w, 2103, nil, "父角色不存在")
+	permissionIDs, ok := cleanPermissionIDs(req.PermissionIDs)
+	if !ok {
+		writeJSON(w, 4101, nil, "权限 ID 列表参数格式非法")
 		return
 	}
-	if p.siblingNameExists(r.Context(), "", req.ParentID, req.Name) {
-		writeJSON(w, 2104, nil, "同一父角色下角色名称已存在")
+	if !p.permissionsExist(r.Context(), permissionIDs) {
+		writeJSON(w, 4108, nil, "绑定的权限不存在")
 		return
 	}
-	role, err := p.createRole(r.Context(), req.Name, req.ParentID, req.Description, req.Status)
+	accountCtx, ok, err := p.currentAdminAccountContext(r)
 	if err != nil {
-		writeJSON(w, 2105, nil, "创建角色失败")
+		writeJSON(w, 4109, nil, "当前账号身份或角色绑定信息读取失败")
 		return
 	}
-	writeJSON(w, 0, roleToResponse(role, ""), "")
+	if !ok {
+		writeJSON(w, 4109, nil, "缺少当前账号身份或角色绑定信息")
+		return
+	}
+	parentID, manualParent := req.ParentID, req.ParentID != ""
+	if parentID == "" {
+		parentID, ok = accountCtx.uniqueRoleID()
+		if !ok {
+			if accountCtx.IsSuperAdmin && len(accountCtx.RoleIDs) == 0 {
+				parentID = ""
+			} else {
+				writeJSON(w, 4106, nil, "当前账号未绑定角色，且不是允许创建顶级角色的超级管理员")
+				return
+			}
+		}
+	}
+	if parentID != "" {
+		parentRole, exists, err := p.getRole(r.Context(), parentID)
+		if err != nil {
+			writeJSON(w, 4109, nil, "当前账号身份或角色绑定信息读取失败")
+			return
+		}
+		if !exists {
+			if manualParent {
+				writeJSON(w, 4103, nil, "手动指定的父级角色不存在")
+			} else {
+				writeJSON(w, 4107, nil, "当前账号绑定角色不存在或未启用")
+			}
+			return
+		}
+		if parentRole.Status != "enabled" {
+			if manualParent {
+				writeJSON(w, 4104, nil, "手动指定的父级角色未启用")
+			} else {
+				writeJSON(w, 4107, nil, "当前账号绑定角色不存在或未启用")
+			}
+			return
+		}
+		if !accountCtx.canOperateRole(parentID) {
+			if manualParent {
+				writeJSON(w, 4105, nil, "手动指定的父级角色不在当前账号可操作范围内")
+			} else {
+				writeJSON(w, 4107, nil, "当前账号绑定角色不存在或未启用")
+			}
+			return
+		}
+	}
+	if !permissionsAllowedByParent(r.Context(), p, parentID, permissionIDs) {
+		writeJSON(w, 4108, nil, "绑定的权限不存在或超出父级角色权限范围")
+		return
+	}
+	if p.siblingNameExists(r.Context(), "", parentID, req.Name) {
+		writeJSON(w, 4102, nil, "角色名称已存在")
+		return
+	}
+	role, err := p.createRoleWithPermissions(r.Context(), req.Name, parentID, req.Description, req.Status, permissionIDs)
+	if err != nil {
+		writeJSON(w, 4102, nil, "创建角色失败")
+		return
+	}
+	resp := roleToResponse(role, "")
+	resp.PermissionIDs = permissionIDs
+	writeJSON(w, 0, resp, "")
 }
 
 func (p *RolePlugin) handleRoleList(w http.ResponseWriter, r *http.Request) {
@@ -237,62 +306,75 @@ func (p *RolePlugin) handleAssignPermissions(w http.ResponseWriter, r *http.Requ
 		PermissionIDs *[]string `json:"permission_ids"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
-		writeJSON(w, 2161, nil, "请求体解析失败: "+err.Error())
+		writeJSON(w, 4201, nil, "请求体解析失败: "+err.Error())
 		return
 	}
 	req.RoleID = strings.TrimSpace(req.RoleID)
 	if !validUUID(req.RoleID) {
-		writeJSON(w, 2161, nil, "角色 ID 缺失或格式不合法")
+		writeJSON(w, 4201, nil, "角色 ID 缺失或格式不合法")
 		return
 	}
 	role, exists, err := p.getRole(r.Context(), req.RoleID)
 	if err != nil {
-		writeJSON(w, 2167, nil, "分配权限失败")
+		writeJSON(w, 4205, nil, "分配权限失败")
 		return
 	}
 	if !exists {
-		writeJSON(w, 2162, nil, "角色不存在")
+		writeJSON(w, 4202, nil, "角色不存在")
+		return
+	}
+	if role.Status != "enabled" {
+		writeJSON(w, 4203, nil, "角色状态不允许分配权限")
 		return
 	}
 	if req.PermissionIDs == nil {
-		writeJSON(w, 2163, nil, "权限点 ID 列表格式不合法")
+		writeJSON(w, 4201, nil, "权限点 ID 列表格式不合法")
 		return
 	}
-	assigned := map[string]bool{}
-	for _, permissionID := range *req.PermissionIDs {
-		permissionID = strings.TrimSpace(permissionID)
-		if !validUUID(permissionID) {
-			writeJSON(w, 2163, nil, "权限点 ID 列表格式不合法")
-			return
-		}
-		assigned[permissionID] = true
+	permissionIDs, ok := cleanPermissionIDs(*req.PermissionIDs)
+	if !ok {
+		writeJSON(w, 4201, nil, "权限点 ID 列表格式不合法")
+		return
 	}
-	permissionIDs := sortedKeys(assigned)
+	assigned := boolSet(permissionIDs)
 	if !p.permissionsExist(r.Context(), permissionIDs) {
-		writeJSON(w, 2164, nil, "存在不存在的权限点")
+		writeJSON(w, 4204, nil, "权限不存在")
+		return
+	}
+	accountCtx, ctxOK, err := p.currentAdminAccountContext(r)
+	if err != nil {
+		writeJSON(w, 4205, nil, "分配权限失败")
+		return
+	}
+	if !ctxOK {
+		writeJSON(w, 4203, nil, "无法读取当前后台账号身份")
+		return
+	}
+	if !accountCtx.canOperateRole(req.RoleID) {
+		writeJSON(w, 4203, nil, "角色不在当前账号可操作范围内")
 		return
 	}
 	parentSet, err := p.permissionSet(r.Context(), role.ParentID)
 	if err != nil {
-		writeJSON(w, 2167, nil, "分配权限失败")
+		writeJSON(w, 4205, nil, "分配权限失败")
 		return
 	}
 	if !permissionSetWithin(parentSet, assigned) {
-		writeJSON(w, 2165, nil, "子角色权限不能超出父角色权限范围")
+		writeJSON(w, 4204, nil, "权限不存在或超出父角色权限范围")
 		return
 	}
 	childrenWithin, err := p.childrenWithinPermissionSet(r.Context(), req.RoleID, assigned)
 	if err != nil {
-		writeJSON(w, 2167, nil, "分配权限失败")
+		writeJSON(w, 4205, nil, "分配权限失败")
 		return
 	}
 	if !childrenWithin {
-		writeJSON(w, 2166, nil, "当前角色存在子角色，清理权限会导致子角色越权")
+		writeJSON(w, 4205, nil, "当前角色存在子角色，清理权限会导致子角色越权")
 		return
 	}
 	updatedAt, err := p.assignPermissions(r.Context(), req.RoleID, permissionIDs)
 	if err != nil {
-		writeJSON(w, 2167, nil, "分配权限失败")
+		writeJSON(w, 4205, nil, "分配权限失败")
 		return
 	}
 	writeJSON(w, 0, map[string]any{"role_id": req.RoleID, "permission_ids": permissionIDs, "updated_at": formatTime(updatedAt)}, "")

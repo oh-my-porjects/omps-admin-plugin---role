@@ -1,0 +1,153 @@
+{
+  "api": "POST /api/role/create",
+  "cases": [
+    {
+      "name": "create role with explicit enabled parent",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/api/role/create",
+      "headers": {
+        "X-Admin-Session-Token": "${admin_session_token}"
+      },
+      "body": {
+        "name": "${range_tag}manual_${rand:8}",
+        "status": "enabled",
+        "parent_role_id": "00000000-0000-0000-0000-000000000001",
+        "permission_ids": ["00000000-0000-0000-0000-000000000002"]
+      },
+      "expect_status": 200,
+      "expect_business_status": 0,
+      "expect_field": {
+        "data.parent_role_id": "00000000-0000-0000-0000-000000000001",
+        "data.status": "enabled"
+      },
+      "side_effect_tables": ["role_roles", "role_role_permissions"]
+    },
+    {
+      "name": "create role from operator unique bound role",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/api/role/create",
+      "headers": {
+        "X-Admin-Session-Token": "${operator_session_token}"
+      },
+      "body": {
+        "name": "${range_tag}auto_${rand:8}",
+        "status": "enabled",
+        "permission_ids": []
+      },
+      "expect_status": 200,
+      "expect_business_status": 0,
+      "expect_field": {
+        "data.parent_role_id": "00000000-0000-0000-0000-000000000003"
+      },
+      "side_effect_tables": ["role_roles", "role_role_permissions"]
+    },
+    {
+      "name": "create top role as super admin without bound role",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/api/role/create",
+      "headers": {
+        "X-Admin-Session-Token": "${admin_session_token}"
+      },
+      "body": {
+        "name": "${range_tag}top_${rand:8}",
+        "status": "enabled",
+        "permission_ids": []
+      },
+      "expect_status": 200,
+      "expect_business_status": 0,
+      "expect_field": {
+        "data.parent_role_id": ""
+      },
+      "side_effect_tables": ["role_roles", "role_role_permissions"]
+    },
+    {
+      "name": "create role without admin account context fails",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/api/role/create",
+      "body": {
+        "name": "${range_tag}missing_context_${rand:8}",
+        "status": "enabled"
+      },
+      "expect_status": 200,
+      "expect_business_status": 4109,
+      "side_effect_tables": ["role_roles", "role_role_permissions"]
+    },
+    {
+      "name": "create role with missing parent fails",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/api/role/create",
+      "headers": {
+        "X-Admin-Session-Token": "${admin_session_token}"
+      },
+      "body": {
+        "name": "${range_tag}missing_parent_${rand:8}",
+        "status": "enabled",
+        "parent_role_id": "99999999-9999-9999-9999-999999999999"
+      },
+      "expect_status": 200,
+      "expect_business_status": 4103,
+      "side_effect_tables": ["role_roles", "role_role_permissions"]
+    },
+    {
+      "name": "create role with disabled parent fails",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/api/role/create",
+      "headers": {
+        "X-Admin-Session-Token": "${admin_session_token}"
+      },
+      "body": {
+        "name": "${range_tag}disabled_parent_${rand:8}",
+        "status": "enabled",
+        "parent_role_id": "00000000-0000-0000-0000-000000000005"
+      },
+      "expect_status": 200,
+      "expect_business_status": 4104,
+      "side_effect_tables": ["role_roles", "role_role_permissions"]
+    },
+    {
+      "name": "create role with missing permission fails",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/api/role/create",
+      "headers": {
+        "X-Admin-Session-Token": "${admin_session_token}"
+      },
+      "body": {
+        "name": "${range_tag}missing_perm_${rand:8}",
+        "status": "enabled",
+        "parent_role_id": "00000000-0000-0000-0000-000000000001",
+        "permission_ids": ["99999999-9999-9999-9999-999999999999"]
+      },
+      "expect_status": 200,
+      "expect_business_status": 4108,
+      "side_effect_tables": ["role_roles", "role_role_permissions"]
+    },
+    {
+      "name": "create role rejects anonymous request",
+      "actor": "anonymous",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/api/role/create",
+      "body": {
+        "name": "${range_tag}anonymous_${rand:8}",
+        "status": "enabled",
+        "parent_role_id": "00000000-0000-0000-0000-000000000001"
+      },
+      "expect_status": 401,
+      "side_effect_tables": ["role_roles", "role_role_permissions"]
+    }
+  ]
+}

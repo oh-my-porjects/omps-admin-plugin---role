@@ -1,38 +1,32 @@
-# 测试数据声明 —— 平台从这份声明派生种子/清理/快照三段 SQL
-#
-# ⚠️ 必填：tables 为空时本模块部署后会被"测试资产部署后校验"挡下，需求停在 deploy 阶段。
-#
-# 字段说明：
-#   range_tag       测试范围前缀，{req_id} 由平台运行时替换为实际需求 ID
-#   noise_fields    副作用对比时忽略的字段（除平台默认通用噪音外的额外字段）
-#   tables          每张涉及测试的表一段；列出顺序决定清理删除顺序（反序）
-#
-# 派生规则：
-#   - 种子 SQL：每条 seed_data → INSERT ... ON CONFLICT (primary_key) DO UPDATE ... RETURNING *
-#   - 清理 SQL：DELETE FROM <table> WHERE <range_filter> RETURNING *
-#   - 快照 SQL（计数）：SELECT COUNT(*) FROM <table> WHERE <range_filter>
-#   - 快照 SQL（明细）：SELECT <snapshot_view> FROM <table> WHERE <range_filter> LIMIT 100
-#
-# 详见 prompts/test-assets-gen.md
-
 range_tag: "test_req{req_id}_"
 
-noise_fields: []
+noise_fields: [updated_at]
 
-# tables 必须声明本模块"真实存在的"数据表（admin-server 部署后会逐表 INSERT 验证）。
-# 模板默认留空 {} —— AI 写代码时**必须**根据 storage.go / migrations 里实际 CREATE TABLE
-# 的表替换成完整声明；漏填会被部署后校验阻塞，且会被"tables 与代码 CREATE TABLE 一致性
-# 检查"挡下，不会让需求误进入下一阶段。
-#
-# 单表声明示例（删掉花括号 {} 后填写）：
-#
-# tables:
-#   <你的真实表名>:
-#     primary_key: id
-#     range_filter: "id LIKE '{range_tag}%'"
-#     snapshot_view: [id, name, created_at]
-#     snapshot_summary: "id, name"
-#     seed_data:
-#       - {id: "{range_tag}001", name: "示例 1", created_at: "now()"}
-#       - {id: "{range_tag}002", name: "示例 2", created_at: "now()"}
-tables: {}
+tables:
+  role_roles:
+    primary_key: id
+    range_filter: "name LIKE '${range_tag}%' OR description LIKE '${range_tag}%'"
+    snapshot_view: [id, name, parent_id, status, description, created_at, updated_at]
+    snapshot_summary: "name, status, parent_id"
+    seed_data:
+      - {id: "11111111-1111-4111-8111-000000000001", name: "${range_tag}assign_top", parent_id: null, description: "${range_tag}role for permission assignment", status: "enabled", created_at: "now()", updated_at: "now()"}
+      - {id: "11111111-1111-4111-8111-000000000002", name: "${range_tag}update_child", parent_id: "00000000-0000-0000-0000-000000000001", description: "${range_tag}role for update", status: "enabled", created_at: "now()", updated_at: "now()"}
+      - {id: "11111111-1111-4111-8111-000000000003", name: "${range_tag}disabled_role", parent_id: null, description: "${range_tag}disabled role", status: "disabled", created_at: "now()", updated_at: "now()"}
+
+  role_permissions:
+    primary_key: id
+    range_filter: "code LIKE '${range_tag}%' OR name LIKE '${range_tag}%' OR description LIKE '${range_tag}%'"
+    snapshot_view: [id, code, name, description, created_at, updated_at]
+    snapshot_summary: "code, name"
+    seed_data:
+      - {id: "22222222-2222-4222-8222-000000000001", code: "${range_tag}perm_read", name: "${range_tag}Perm Read", description: "${range_tag}permission read", created_at: "now()", updated_at: "now()"}
+      - {id: "22222222-2222-4222-8222-000000000002", code: "${range_tag}perm_write", name: "${range_tag}Perm Write", description: "${range_tag}permission write", created_at: "now()", updated_at: "now()"}
+
+  role_role_permissions:
+    primary_key: id
+    range_filter: "role_id IN (SELECT id FROM role_roles WHERE name LIKE '${range_tag}%' OR description LIKE '${range_tag}%') OR permission_id IN (SELECT id FROM role_permissions WHERE code LIKE '${range_tag}%' OR name LIKE '${range_tag}%' OR description LIKE '${range_tag}%')"
+    snapshot_view: [id, role_id, permission_id, created_at]
+    snapshot_summary: "role_id, permission_id"
+    seed_data:
+      - {id: "33333333-3333-4333-8333-000000000001", role_id: "11111111-1111-4111-8111-000000000001", permission_id: "22222222-2222-4222-8222-000000000001", created_at: "now()"}
+      - {id: "33333333-3333-4333-8333-000000000002", role_id: "11111111-1111-4111-8111-000000000002", permission_id: "00000000-0000-0000-0000-000000000002", created_at: "now()"}

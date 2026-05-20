@@ -1,0 +1,26 @@
+{
+  "api": "POST /_internal/selftest/role",
+  "cases": [
+    {
+      "name": "selftest rejects external request",
+      "actor": "anonymous",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/_internal/selftest/role",
+      "expect_status": 401
+    },
+    {
+      "name": "selftest accepts internal token and reports deprecated endpoint",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/_internal/selftest/role",
+      "headers": {
+        "X-Internal-Token": "${internal_token}"
+      },
+      "expect_status": 200,
+      "expect_business_status": 1,
+      "expect_contains": "selftest 端点已废弃"
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "name": "role",
+  "title": "角色公共模块",
+  "summary": "角色公共模块",
+  "path": "modules/role",
+  "owner_tables": [],
+  "public_apis": [
+    {
+      "method": "GET",
+      "path": "/api/role/hello"
+    },
+    {
+      "method": "POST",
+      "path": "/api/role/create"
+    },
+    {
+      "method": "GET",
+      "path": "/api/role/list"
+    },
+    {
+      "method": "GET",
+      "path": "/api/role/detail"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/role/update"
+    },
+    {
+      "method": "POST",
+      "path": "/api/role/permission-create"
+    },
+    {
+      "method": "GET",
+      "path": "/api/role/permission-list"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/role/assign-permissions"
+    },
+    {
+      "method": "POST",
+      "path": "/api/role/check-permission"
+    },
+    {
+      "method": "POST",
+      "path": "/_internal/method-call/role"
+    },
+    {
+      "method": "POST",
+      "path": "/_internal/scheduled-trigger/role"
+    },
+    {
+      "method": "POST",
+      "path": "/_internal/selftest/role"
+    }
+  ],
+  "admin_apis": [
+    {
+      "method": "POST",
+      "path": "/{admin_prefix}/api/role/admin/ping"
+    }
+  ],
+  "dependencies": [
+    "account"
+  ],
+  "configs": [],
+  "entry_files": [
+    "main.go"
+  ],
+  "hot_reload": {
+    "enabled": true,
+    "safe": true,
+    "state_strategy": "externalized",
+    "has_background_workers": false,
+    "has_in_memory_state": false,
+    "shutdown_requirements": [],
+    "reload_risks": []
+  },
+  "background_tasks": {
+    "has_workers": false,
+    "worker_types": [],
+    "requires_unloading_state": false,
+    "shutdown_timeout_ms": 1000,
+    "exit_policy": "cooperative_cancel",
+    "allows_new_work_while_unloading": false
+  },
+  "related_requirements": [],
+  "last_generated_at": "2026-05-19T15:11:58Z",
+  "warnings": [
+    "缺少 api-docs.json，已从源码 Routes 降级解析",
+    "缺少 schema.json，表 ownership 未能确定"
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "api": "PUT /api/role/assign-permissions",
+  "cases": [
+    {
+      "name": "assign multiple permissions to top role",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "PUT",
+      "path": "/api/role/assign-permissions",
+      "headers": {
+        "X-Admin-Session-Token": "${admin_session_token}"
+      },
+      "body": {
+        "role_id": "11111111-1111-4111-8111-000000000001",
+        "permission_ids": [
+          "22222222-2222-4222-8222-000000000001",
+          "22222222-2222-4222-8222-000000000002"
+        ]
+      },
+      "expect_status": 200,
+      "expect_business_status": 0,
+      "expect_field": {
+        "data.role_id": "11111111-1111-4111-8111-000000000001"
+      },
+      "side_effect_tables": ["role_role_permissions", "role_roles"]
+    },
+    {
+      "name": "assign permissions to missing role fails",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "PUT",
+      "path": "/api/role/assign-permissions",
+      "headers": {
+        "X-Admin-Session-Token": "${admin_session_token}"
+      },
+      "body": {
+        "role_id": "99999999-9999-9999-9999-999999999999",
+        "permission_ids": ["22222222-2222-4222-8222-000000000001"]
+      },
+      "expect_status": 200,
+      "expect_business_status": 4202,
+      "side_effect_tables": ["role_role_permissions", "role_roles"]
+    },
+    {
+      "name": "assign missing permission fails",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "PUT",
+      "path": "/api/role/assign-permissions",
+      "headers": {
+        "X-Admin-Session-Token": "${admin_session_token}"
+      },
+      "body": {
+        "role_id": "11111111-1111-4111-8111-000000000001",
+        "permission_ids": ["99999999-9999-9999-9999-999999999999"]
+      },
+      "expect_status": 200,
+      "expect_business_status": 4204,
+      "side_effect_tables": ["role_role_permissions", "role_roles"]
+    },
+    {
+      "name": "assign permissions without admin account context fails",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "PUT",
+      "path": "/api/role/assign-permissions",
+      "body": {
+        "role_id": "11111111-1111-4111-8111-000000000001",
+        "permission_ids": ["22222222-2222-4222-8222-000000000001"]
+      },
+      "expect_status": 200,
+      "expect_business_status": 4203,
+      "side_effect_tables": ["role_role_permissions", "role_roles"]
+    },
+    {
+      "name": "assign permissions rejects anonymous request",
+      "actor": "anonymous",
+      "depends_on": [],
+      "method": "PUT",
+      "path": "/api/role/assign-permissions",
+      "body": {
+        "role_id": "11111111-1111-4111-8111-000000000001",
+        "permission_ids": ["22222222-2222-4222-8222-000000000001"]
+      },
+      "expect_status": 401,
+      "side_effect_tables": ["role_role_permissions", "role_roles"]
+    }
+  ]
+}

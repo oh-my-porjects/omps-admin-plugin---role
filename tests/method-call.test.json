@@ -1,0 +1,33 @@
+{
+  "api": "POST /_internal/method-call/role",
+  "cases": [
+    {
+      "name": "method call rejects external request",
+      "actor": "anonymous",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/_internal/method-call/role",
+      "body": {
+        "method": "missing",
+        "args": {}
+      },
+      "expect_status": 401
+    },
+    {
+      "name": "method call accepts internal token and reports missing method",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/_internal/method-call/role",
+      "headers": {
+        "X-Internal-Token": "${internal_token}"
+      },
+      "body": {
+        "method": "missing",
+        "args": {}
+      },
+      "expect_status": 200,
+      "expect_business_status": 1
+    }
+  ]
+}
