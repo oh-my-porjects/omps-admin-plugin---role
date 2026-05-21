@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -18,8 +20,13 @@ type adminAccountContext struct {
 
 type accountMeResponse struct {
 	Status int `json:"status"`
+	Code   int `json:"code"`
 	Data   struct {
 		AccountID    string `json:"account_id"`
+		ID           any    `json:"id"`
+		Username     string `json:"username"`
+		Role         string `json:"role"`
+		RoleDisplay  string `json:"role_display"`
 		IsSuperAdmin bool   `json:"is_super_admin"`
 		Roles        []struct {
 			RoleID     string `json:"role_id"`
@@ -36,9 +43,27 @@ func (p *RolePlugin) currentAdminAccountContext(r *http.Request) (adminAccountCo
 		token = strings.TrimSpace(r.Header.Get("X-Admin-Session-Token"))
 	}
 	if token == "" {
+		token = strings.TrimSpace(r.Header.Get("X-Admin-Token"))
+	}
+	if token == "" {
+		token = bearerToken(r)
+	}
+	if token == "" {
 		return adminAccountContext{}, false, nil
 	}
-	return p.fetchAdminAccountContext(r, token)
+	ctx, ok, err := p.fetchAdminAccountContext(r, token)
+	if err == nil && ok {
+		return ctx, true, nil
+	}
+	if fallback, fallbackOK, fallbackErr := p.fetchProjectAdminContext(r, token); fallbackErr != nil {
+		if err != nil {
+			return adminAccountContext{}, false, err
+		}
+		return adminAccountContext{}, false, fallbackErr
+	} else if fallbackOK {
+		return fallback, true, nil
+	}
+	return ctx, ok, err
 }
 
 func (p *RolePlugin) fetchAdminAccountContext(r *http.Request, token string) (adminAccountContext, bool, error) {
@@ -63,7 +88,7 @@ func (p *RolePlugin) fetchAdminAccountContext(r *http.Request, token string) (ad
 	if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
 		return adminAccountContext{}, false, err
 	}
-	if out.Status != 0 {
+	if responseStatus(out.Status, out.Code) != 0 {
 		return adminAccountContext{}, false, nil
 	}
 	ctx := adminAccountContext{AccountID: out.Data.AccountID, IsSuperAdmin: out.Data.IsSuperAdmin}
@@ -106,7 +131,7 @@ func (p *RolePlugin) fetchAdminAccountDetailContext(r *http.Request, token, acco
 	if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
 		return adminAccountContext{}, false, err
 	}
-	if out.Status != 0 {
+	if responseStatus(out.Status, out.Code) != 0 {
 		return adminAccountContext{}, false, nil
 	}
 	ctx := adminAccountContext{AccountID: out.Data.AccountID, IsSuperAdmin: out.Data.IsSuperAdmin}
@@ -124,6 +149,130 @@ func (p *RolePlugin) applyAdminAPIKey(req *http.Request) {
 		return
 	}
 	req.Header.Set("X-API-Key", p.adminAPIKey)
+}
+
+func (p *RolePlugin) fetchProjectAdminContext(r *http.Request, token string) (adminAccountContext, bool, error) {
+	if ctx, ok, err := p.projectAdminContextByToken(r.Context(), token); err != nil || ok {
+		return ctx, ok, err
+	}
+	endpoint := p.runtimeURL(r, "/me")
+	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, endpoint, nil)
+	if err != nil {
+		return adminAccountContext{}, false, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	p.applyAdminAPIKey(req)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return adminAccountContext{}, false, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return adminAccountContext{}, false, nil
+	}
+	var out accountMeResponse
+	if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
+		return adminAccountContext{}, false, err
+	}
+	if responseStatus(out.Status, out.Code) != 0 {
+		return adminAccountContext{}, false, nil
+	}
+	ctx := adminAccountContext{
+		AccountID:    firstNonEmpty(out.Data.AccountID, anyString(out.Data.ID), out.Data.Username),
+		IsSuperAdmin: isProjectAdminManageRole(firstNonEmpty(out.Data.Role, out.Data.RoleDisplay)),
+	}
+	for _, role := range out.Data.Roles {
+		if role.RoleID != "" {
+			ctx.RoleIDs = append(ctx.RoleIDs, role.RoleID)
+			ctx.ScopeRoleIDs = append(ctx.ScopeRoleIDs, role.RoleID)
+		}
+	}
+	return ctx, ctx.AccountID != "", nil
+}
+
+func (p *RolePlugin) projectAdminContextByToken(ctx context.Context, token string) (adminAccountContext, bool, error) {
+	if p == nil || p.db == nil || strings.TrimSpace(token) == "" {
+		return adminAccountContext{}, false, nil
+	}
+	var accountID, roleName string
+	err := p.db.QueryRowContext(ctx, `
+		SELECT COALESCE(account_id, ''), COALESCE(role_name, '')
+		FROM rt_admin_sessions
+		WHERE token = $1 AND expires_at > NOW()
+	`, token).Scan(&accountID, &roleName)
+	if errors.Is(err, sql.ErrNoRows) {
+		return adminAccountContext{}, false, nil
+	}
+	if err != nil {
+		return adminAccountContext{}, false, err
+	}
+	accountID = strings.TrimSpace(accountID)
+	if accountID == "" {
+		return adminAccountContext{}, false, nil
+	}
+	return adminAccountContext{
+		AccountID:    accountID,
+		IsSuperAdmin: isProjectAdminManageRole(roleName),
+	}, true, nil
+}
+
+func bearerToken(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	auth := strings.TrimSpace(r.Header.Get("Authorization"))
+	if auth == "" {
+		return ""
+	}
+	const prefix = "Bearer "
+	if !strings.HasPrefix(strings.ToLower(auth), strings.ToLower(prefix)) {
+		return ""
+	}
+	return strings.TrimSpace(auth[len(prefix):])
+}
+
+func responseStatus(status, code int) int {
+	if status != 0 {
+		return status
+	}
+	return code
+}
+
+func anyString(v any) string {
+	switch x := v.(type) {
+	case string:
+		return strings.TrimSpace(x)
+	case float64:
+		if x == 0 {
+			return ""
+		}
+		if x == float64(int64(x)) {
+			return fmt.Sprintf("%d", int64(x))
+		}
+		return fmt.Sprintf("%v", x)
+	case json.Number:
+		return strings.TrimSpace(x.String())
+	default:
+		return ""
+	}
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if strings.TrimSpace(v) != "" {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
+}
+
+func isProjectAdminManageRole(role string) bool {
+	switch strings.TrimSpace(role) {
+	case "admin", "developer", "超级管理员", "开发者":
+		return true
+	default:
+		return false
+	}
 }
 
 func (c adminAccountContext) uniqueRoleID() (string, bool) {

@@ -54,7 +54,8 @@ func validStatus(s string) bool {
 }
 
 func validUUID(s string) bool {
-	return uuidRE.MatchString(s)
+	s = strings.TrimSpace(s)
+	return uuidRE.MatchString(s) || shortIDRE.MatchString(s)
 }
 
 func validPermissionCode(s string) bool {

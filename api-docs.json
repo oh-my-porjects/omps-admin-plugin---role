@@ -8,7 +8,7 @@
       "endpoint_key": "GET /api/role/hello",
       "title": "模块探活",
       "description": "返回 role 模块名称和当前版本。",
-      "auth": "public",
+      "auth": "admin_session",
       "params": [],
       "response": {
         "description": "模块基础信息。",
@@ -32,15 +32,15 @@
       "path": "/api/role/create",
       "endpoint_key": "POST /api/role/create",
       "title": "创建角色",
-      "description": "创建角色，按当前后台账号上下文确定父角色，并可同时绑定权限点。",
-      "auth": "public",
+      "description": "创建角色，按当前后台账号上下文确定父角色，并可同时绑定权限点。兼容 X-Admin-Session-Token 和项目后台 Authorization Bearer 登录态。",
+      "auth": "admin_session",
       "params": [
         { "name": "name", "type": "string", "required": true, "constraint": "2-30 个字符。", "description": "角色名称。" },
-        { "name": "parent_id", "type": "string", "required": false, "constraint": "UUID；与 parent_role_id 同义，parent_role_id 优先。", "description": "父角色 ID。" },
-        { "name": "parent_role_id", "type": "string", "required": false, "constraint": "UUID；非空时覆盖 parent_id。", "description": "父角色 ID 兼容字段。" },
+        { "name": "parent_id", "type": "string", "required": false, "constraint": "UUID 或 12 位历史短 ID；与 parent_role_id 同义，parent_role_id 优先。", "description": "父角色 ID。" },
+        { "name": "parent_role_id", "type": "string", "required": false, "constraint": "UUID 或 12 位历史短 ID；非空时覆盖 parent_id。", "description": "父角色 ID 兼容字段。" },
         { "name": "description", "type": "string", "required": false, "constraint": "最多 200 个字符。", "description": "角色说明。" },
         { "name": "status", "type": "string", "required": true, "constraint": "enabled 或 disabled。", "description": "角色状态。" },
-        { "name": "permission_ids", "type": "array", "item_type": "string", "required": false, "constraint": "每项必须是 UUID，重复值会去重。", "description": "初始绑定的权限点 ID 列表。" }
+        { "name": "permission_ids", "type": "array", "item_type": "string", "required": false, "constraint": "每项必须是 UUID 或 12 位历史短 ID，重复值会去重。", "description": "初始绑定的权限点 ID 列表。" }
       ],
       "request_example": {
         "name": "运营主管",
@@ -121,12 +121,12 @@
       "endpoint_key": "GET /api/role/list",
       "title": "角色列表",
       "description": "按分页、状态、父角色和关键词查询角色列表。",
-      "auth": "public",
+      "auth": "admin_session",
       "params": [
         { "name": "page", "type": "integer", "required": true, "constraint": ">= 1。", "description": "页码。" },
         { "name": "page_size", "type": "integer", "required": true, "constraint": "1-100。", "description": "每页数量。" },
         { "name": "status", "type": "string", "required": false, "constraint": "enabled 或 disabled。", "description": "角色状态过滤。" },
-        { "name": "parent_id", "type": "string", "required": false, "constraint": "为空表示筛选顶级角色；非空必须为 UUID。", "description": "父角色过滤；只要传入该参数就启用父级过滤。" },
+        { "name": "parent_id", "type": "string", "required": false, "constraint": "为空表示筛选顶级角色；非空必须为 UUID 或 12 位历史短 ID。", "description": "父角色过滤；只要传入该参数就启用父级过滤。" },
         { "name": "keyword", "type": "string", "required": false, "constraint": "最多 30 个字符。", "description": "按角色名称模糊查询。" }
       ],
       "response": {
@@ -189,9 +189,9 @@
       "endpoint_key": "GET /api/role/detail",
       "title": "角色详情",
       "description": "查询单个角色详情及其已绑定权限点。",
-      "auth": "public",
+      "auth": "admin_session",
       "params": [
-        { "name": "role_id", "type": "string", "required": true, "constraint": "UUID。", "description": "角色 ID。" }
+        { "name": "role_id", "type": "string", "required": true, "constraint": "UUID 或 12 位历史短 ID。", "description": "角色 ID。" }
       ],
       "response": {
         "description": "角色详情。",
@@ -251,12 +251,12 @@
       "path": "/api/role/update",
       "endpoint_key": "PUT /api/role/update",
       "title": "更新角色",
-      "description": "更新角色名称、父级、说明和状态。",
-      "auth": "public",
+      "description": "更新角色名称、父级、说明和状态。兼容 UUID 和历史 12 位短 ID。",
+      "auth": "admin_session",
       "params": [
-        { "name": "role_id", "type": "string", "required": true, "constraint": "UUID。", "description": "角色 ID。" },
+        { "name": "role_id", "type": "string", "required": true, "constraint": "UUID 或 12 位历史短 ID。", "description": "角色 ID。" },
         { "name": "name", "type": "string", "required": true, "constraint": "2-30 个字符。", "description": "角色名称。" },
-        { "name": "parent_id", "type": "string", "required": false, "constraint": "为空表示顶级角色；非空必须为 UUID 且不能形成循环。", "description": "父角色 ID。" },
+        { "name": "parent_id", "type": "string", "required": false, "constraint": "为空表示顶级角色；非空必须为 UUID 或 12 位历史短 ID 且不能形成循环。", "description": "父角色 ID。" },
         { "name": "description", "type": "string", "required": false, "constraint": "最多 200 个字符。", "description": "角色说明。" },
         { "name": "status", "type": "string", "required": true, "constraint": "enabled 或 disabled。", "description": "角色状态。" }
       ],
@@ -427,8 +427,8 @@
       "description": "覆盖角色已绑定权限点，并校验账号操作范围、父级权限边界和子角色权限边界。",
       "auth": "public",
       "params": [
-        { "name": "role_id", "type": "string", "required": true, "constraint": "UUID。", "description": "角色 ID。" },
-        { "name": "permission_ids", "type": "array", "item_type": "string", "required": true, "constraint": "每项必须是 UUID，重复值会去重；可传空数组清空权限。", "description": "新的权限点 ID 列表。" }
+        { "name": "role_id", "type": "string", "required": true, "constraint": "UUID 或 12 位历史短 ID。", "description": "角色 ID。" },
+        { "name": "permission_ids", "type": "array", "item_type": "string", "required": true, "constraint": "每项必须是 UUID 或 12 位历史短 ID，重复值会去重；可传空数组清空权限。", "description": "新的权限点 ID 列表。" }
       ],
       "request_example": {
         "role_id": "00000000-0000-0000-0000-000000000003",
@@ -474,9 +474,9 @@
       "endpoint_key": "POST /api/role/check-permission",
       "title": "检查权限",
       "description": "检查指定角色是否启用且直接绑定了指定权限点。",
-      "auth": "public",
+      "auth": "admin_session",
       "params": [
-        { "name": "role_id", "type": "string", "required": true, "constraint": "UUID。", "description": "角色 ID。" },
+        { "name": "role_id", "type": "string", "required": true, "constraint": "UUID 或 12 位历史短 ID。", "description": "角色 ID。" },
         { "name": "permission_code", "type": "string", "required": true, "constraint": "3-80 个字符，仅允许小写字母、数字、点、下划线、短横线。", "description": "权限点标识。" }
       ],
       "request_example": {

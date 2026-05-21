@@ -3,12 +3,16 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
 )
 
 func TestPluginName(t *testing.T) {
@@ -201,6 +205,133 @@ func TestCurrentAdminAccountContextIgnoresSpoofedIdentityHeaders(t *testing.T) {
 	resp := decodeTestResponse(t, rec)
 	if resp.Status != 4109 {
 		t.Fatalf("status = %d, want 4109, msg=%s", resp.Status, resp.Msg)
+	}
+}
+
+func TestHandleRoleCreateUsesProjectAdminBearerContext(t *testing.T) {
+	p := testRolePlugin()
+	token := "project-admin-token"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/admin-account/me":
+			writeJSON(w, 2212, nil, "会话不存在或已过期")
+		case "/me":
+			if r.Header.Get("Authorization") != "Bearer "+token {
+				writeJSON(w, 401, nil, "未登录")
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"data": map[string]any{
+					"account_id":   "pD1BjYBEQbEc",
+					"username":     "ee797f5c",
+					"role":         "admin",
+					"role_display": "超级管理员",
+				},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+	p.runtimeAddr = server.URL
+
+	req := httptest.NewRequest(http.MethodPost, "/api/role/create", jsonBody(map[string]any{
+		"name":           "项目后台角色",
+		"status":         "enabled",
+		"parent_role_id": "",
+	}))
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	rec := httptest.NewRecorder()
+	p.handleRoleCreate(rec, req)
+	resp := decodeTestResponse(t, rec)
+	if resp.Status != 0 {
+		t.Fatalf("status = %d, want 0, msg=%s", resp.Status, resp.Msg)
+	}
+	data := resp.Data.(map[string]any)
+	if data["parent_role_id"] != "" {
+		t.Fatalf("parent_role_id = %v, want empty", data["parent_role_id"])
+	}
+}
+
+func TestProjectAdminContextByTokenAllowsAdminWhenAccountMissing(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock.New: %v", err)
+	}
+	defer db.Close()
+
+	p := &RolePlugin{db: db}
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COALESCE(account_id, ''), COALESCE(role_name, '')")).
+		WithArgs("project-session").
+		WillReturnRows(sqlmock.NewRows([]string{"account_id", "role_name"}).AddRow("pD1BjYBEQbEc", "admin"))
+
+	ctx, ok, err := p.projectAdminContextByToken(context.Background(), "project-session")
+	if err != nil {
+		t.Fatalf("projectAdminContextByToken: %v", err)
+	}
+	if !ok {
+		t.Fatal("ok=false, want true")
+	}
+	if ctx.AccountID != "pD1BjYBEQbEc" || !ctx.IsSuperAdmin {
+		t.Fatalf("ctx=%#v", ctx)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
+	}
+}
+
+func TestProjectAdminContextByTokenMissingSession(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock.New: %v", err)
+	}
+	defer db.Close()
+
+	p := &RolePlugin{db: db}
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COALESCE(account_id, ''), COALESCE(role_name, '')")).
+		WithArgs("missing-session").
+		WillReturnError(sql.ErrNoRows)
+
+	_, ok, err := p.projectAdminContextByToken(context.Background(), "missing-session")
+	if err != nil {
+		t.Fatalf("projectAdminContextByToken: %v", err)
+	}
+	if ok {
+		t.Fatal("ok=true, want false")
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
+	}
+}
+
+func TestHandleRoleUpdateAcceptsLegacyShortID(t *testing.T) {
+	p := testRolePlugin()
+	legacyID := "abcDEF123456"
+	p.roles[legacyID] = roleRecord{
+		ID:          legacyID,
+		Name:        "历史角色",
+		Status:      "enabled",
+		Description: "legacy short id role",
+	}
+	req := httptest.NewRequest(http.MethodPut, "/api/role/update", jsonBody(map[string]any{
+		"role_id":     legacyID,
+		"name":        "历史角色改名",
+		"parent_id":   "",
+		"description": "updated legacy role",
+		"status":      "enabled",
+	}))
+
+	rec := httptest.NewRecorder()
+	p.handleRoleUpdate(rec, req)
+	resp := decodeTestResponse(t, rec)
+	if resp.Status != 0 {
+		t.Fatalf("status = %d, want 0, msg=%s", resp.Status, resp.Msg)
+	}
+	data := resp.Data.(map[string]any)
+	if data["role_id"] != legacyID {
+		t.Fatalf("role_id = %v, want %s", data["role_id"], legacyID)
 	}
 }
 

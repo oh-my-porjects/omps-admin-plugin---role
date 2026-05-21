@@ -17,11 +17,12 @@ views:
     title: 角色
     api: GET /api/role/list
     columns:
-      - field: id
+      - field: role_id
         title: ID
+        render: short_id
       - field: name
         title: 角色名
-      - field: parent_id
+      - field: parent_name
         title: 父角色
       - field: description
         title: 说明
@@ -39,23 +40,87 @@ views:
         type: page
         title: 新建角色
         api: POST /api/role/create
+        fields:
+          - field: name
+            title: 角色名
+            type: string
+            required: true
+            placeholder: 2-30 个字符
+          - field: parent_role_id
+            title: 父角色 ID
+            type: string
+            placeholder: 留空创建顶级角色，或填已有角色 ID
+          - field: status
+            title: 状态
+            type: enum
+            required: true
+            default: enabled
+            enum:
+              enabled: 启用
+              disabled: 禁用
+          - field: description
+            title: 说明
+            type: text
       - key: edit
         type: row
         title: 编辑
         api: PUT /api/role/update
+        fields:
+          - field: role_id
+            title: 角色 ID
+            type: string
+            hidden: true
+            required: true
+          - field: name
+            title: 角色名
+            type: string
+            required: true
+          - field: parent_id
+            title: 父角色 ID
+            type: string
+            placeholder: 顶级角色留空
+          - field: status
+            title: 状态
+            type: enum
+            required: true
+            enum:
+              enabled: 启用
+              disabled: 禁用
+          - field: description
+            title: 说明
+            type: text
   - key: permission_list
     type: table
     title: 权限点
     api: GET /api/role/permission-list
     columns:
-      - field: id
+      - field: permission_id
         title: ID
+        render: short_id
       - field: code
         title: 权限码
       - field: name
         title: 名称
       - field: description
         title: 说明
+    actions:
+      - key: create
+        type: page
+        title: 新建权限点
+        api: POST /api/role/permission-create
+        fields:
+          - field: code
+            title: 权限码
+            type: string
+            required: true
+            placeholder: 例如 role.manage
+          - field: name
+            title: 名称
+            type: string
+            required: true
+          - field: description
+            title: 说明
+            type: text
 roles:
   - code: admin
     title: 超级管理员
