@@ -291,6 +291,33 @@ func TestHandleAssignPermissionsMultiple(t *testing.T) {
 	}
 }
 
+func TestHandleAssignPermissionsAcceptsLegacyShortPermissionIDs(t *testing.T) {
+	p := testRolePlugin()
+	legacyPerm := permissionRecord{ID: "KNaXAHF3yTFD", Code: "legacy.short", Name: "Legacy Short"}
+	p.permissions[legacyPerm.ID] = legacyPerm
+	p.rolePerms[rootRoleID][legacyPerm.ID] = true
+	req := httptest.NewRequest(http.MethodPut, "/api/role/assign-permissions", jsonBody(map[string]any{
+		"role_id":        supportRoleID,
+		"permission_ids": []string{legacyPerm.ID},
+	}))
+	withAdminSession(t, p, req, adminSessionContext{
+		AccountID:    "00000000-0000-0000-0000-000000000109",
+		IsSuperAdmin: true,
+	})
+
+	rec := httptest.NewRecorder()
+	p.handleAssignPermissions(rec, req)
+	resp := decodeTestResponse(t, rec)
+	if resp.Status != 0 {
+		t.Fatalf("status = %d, want 0, msg=%s", resp.Status, resp.Msg)
+	}
+	data := resp.Data.(map[string]any)
+	got := data["permission_ids"].([]any)
+	if len(got) != 1 || got[0] != legacyPerm.ID {
+		t.Fatalf("permission_ids = %#v, want %s", got, legacyPerm.ID)
+	}
+}
+
 func TestHandleAssignPermissionsErrors(t *testing.T) {
 	tests := []struct {
 		name       string

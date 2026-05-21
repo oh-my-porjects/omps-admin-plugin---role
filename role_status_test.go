@@ -35,6 +35,33 @@ func TestHandleRoleChildrenTree(t *testing.T) {
 	}
 }
 
+func TestLegacyShortRoleIDStatusHandlers(t *testing.T) {
+	p := testRolePlugin()
+	role := roleRecord{ID: "fS9Cmj6bzKBa", Name: "历史角色", ParentID: rootRoleID, Status: "enabled"}
+	p.roles[role.ID] = role
+
+	detailReq := httptest.NewRequest(http.MethodGet, "/api/role/detail?role_id="+role.ID, nil)
+	detailRec := httptest.NewRecorder()
+	p.handleRoleDetail(detailRec, detailReq)
+	if resp := decodeTestResponse(t, detailRec); resp.Status != 0 {
+		t.Fatalf("detail status = %d, want 0, msg=%s", resp.Status, resp.Msg)
+	}
+
+	treeReq := httptest.NewRequest(http.MethodGet, "/api/role/children-tree?role_id="+role.ID, nil)
+	treeRec := httptest.NewRecorder()
+	p.handleRoleChildrenTree(treeRec, treeReq)
+	if resp := decodeTestResponse(t, treeRec); resp.Status != 0 {
+		t.Fatalf("children-tree status = %d, want 0, msg=%s", resp.Status, resp.Msg)
+	}
+
+	disableReq := httptest.NewRequest(http.MethodPost, "/api/role/disable", jsonBody(map[string]any{"role_id": role.ID}))
+	disableRec := httptest.NewRecorder()
+	p.handleRoleDisable(disableRec, disableReq)
+	if resp := decodeTestResponse(t, disableRec); resp.Status != 0 {
+		t.Fatalf("disable status = %d, want 0, msg=%s", resp.Status, resp.Msg)
+	}
+}
+
 func TestHandleRoleDeleteCascade(t *testing.T) {
 	p := testRolePlugin()
 	role := roleRecord{ID: "00000000-0000-0000-0000-000000000211", Name: "运营中心", ParentID: rootRoleID, Status: "enabled"}

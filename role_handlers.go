@@ -38,7 +38,7 @@ func (p *RolePlugin) handleRoleCreate(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 4101, nil, "角色说明过长")
 		return
 	}
-	if req.ParentID != "" && !validUUID(req.ParentID) {
+	if req.ParentID != "" && !validRecordID(req.ParentID) {
 		writeJSON(w, 4101, nil, "父级角色 ID 参数格式非法")
 		return
 	}
@@ -135,7 +135,7 @@ func (p *RolePlugin) handleRoleList(w http.ResponseWriter, r *http.Request) {
 	}
 	parentID := strings.TrimSpace(q.Get("parent_id"))
 	parentFilterSet := q.Has("parent_id")
-	if parentID != "" && !validUUID(parentID) {
+	if parentID != "" && !validRecordID(parentID) {
 		writeJSON(w, 2113, nil, "父角色参数格式不合法")
 		return
 	}
@@ -154,7 +154,7 @@ func (p *RolePlugin) handleRoleList(w http.ResponseWriter, r *http.Request) {
 
 func (p *RolePlugin) handleRoleDetail(w http.ResponseWriter, r *http.Request) {
 	roleID := strings.TrimSpace(r.URL.Query().Get("role_id"))
-	if !validUUID(roleID) {
+	if !validRecordID(roleID) {
 		writeJSON(w, 2121, nil, "角色 ID 缺失或格式不合法")
 		return
 	}
@@ -187,7 +187,7 @@ func (p *RolePlugin) handleRoleUpdate(w http.ResponseWriter, r *http.Request) {
 	req.ParentID = strings.TrimSpace(req.ParentID)
 	req.Description = strings.TrimSpace(req.Description)
 	req.Status = strings.TrimSpace(req.Status)
-	if !validUUID(req.RoleID) {
+	if !validRecordID(req.RoleID) {
 		writeJSON(w, 2131, nil, "角色 ID 缺失或格式不合法")
 		return
 	}
@@ -209,7 +209,7 @@ func (p *RolePlugin) handleRoleUpdate(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, 2135, nil, "角色层级不允许形成循环")
 			return
 		}
-		if !validUUID(req.ParentID) {
+		if !validRecordID(req.ParentID) {
 			writeJSON(w, 2134, nil, "父角色不存在或父角色设置不合法")
 			return
 		}
@@ -323,7 +323,7 @@ func (p *RolePlugin) handleAssignPermissions(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	req.RoleID = strings.TrimSpace(req.RoleID)
-	if !validUUID(req.RoleID) {
+	if !validRecordID(req.RoleID) {
 		writeJSON(w, 4201, nil, "角色 ID 缺失或格式不合法")
 		return
 	}
@@ -404,7 +404,7 @@ func (p *RolePlugin) handleCheckPermission(w http.ResponseWriter, r *http.Reques
 	}
 	req.RoleID = strings.TrimSpace(req.RoleID)
 	req.PermissionCode = strings.TrimSpace(req.PermissionCode)
-	if !validUUID(req.RoleID) {
+	if !validRecordID(req.RoleID) {
 		writeJSON(w, 2171, nil, "角色 ID 缺失或格式不合法")
 		return
 	}

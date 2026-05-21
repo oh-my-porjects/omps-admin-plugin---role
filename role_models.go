@@ -71,5 +71,6 @@ const (
 
 var (
 	uuidRE           = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+	recordIDRE       = regexp.MustCompile(`^[A-Za-z0-9_-]{8,64}$`)
 	permissionCodeRE = regexp.MustCompile(`^[a-z0-9._-]{3,80}$`)
 )

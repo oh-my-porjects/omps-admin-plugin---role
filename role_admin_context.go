@@ -156,7 +156,7 @@ func cleanPermissionIDs(raw []string) ([]string, bool) {
 	ids := map[string]bool{}
 	for _, permissionID := range raw {
 		permissionID = strings.TrimSpace(permissionID)
-		if !validUUID(permissionID) {
+		if !validRecordID(permissionID) {
 			return nil, false
 		}
 		ids[permissionID] = true

@@ -58,6 +58,10 @@ func validUUID(s string) bool {
 	return uuidRE.MatchString(s)
 }
 
+func validRecordID(s string) bool {
+	return validUUID(s) || recordIDRE.MatchString(s)
+}
+
 func protectedRole(role roleRecord) bool {
 	switch role.ID {
 	case rootRoleID, supportRoleID, disabledRoleID:

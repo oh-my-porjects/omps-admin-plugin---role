@@ -7,7 +7,7 @@ import (
 
 func (p *RolePlugin) handleRoleChildrenTree(w http.ResponseWriter, r *http.Request) {
 	roleID := strings.TrimSpace(r.URL.Query().Get("role_id"))
-	if !validUUID(roleID) {
+	if !validRecordID(roleID) {
 		writeJSON(w, 2311, nil, "role_id 参数非法")
 		return
 	}
@@ -32,7 +32,7 @@ func (p *RolePlugin) handleRoleDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.RoleID = strings.TrimSpace(req.RoleID)
-	if !validUUID(req.RoleID) {
+	if !validRecordID(req.RoleID) {
 		writeJSON(w, 2321, nil, "role_id 参数非法")
 		return
 	}
@@ -86,7 +86,7 @@ func (p *RolePlugin) handleRoleDisable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.RoleID = strings.TrimSpace(req.RoleID)
-	if !validUUID(req.RoleID) {
+	if !validRecordID(req.RoleID) {
 		writeJSON(w, 2331, nil, "role_id 参数非法")
 		return
 	}
@@ -125,7 +125,7 @@ func (p *RolePlugin) handleRoleEnable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.RoleID = strings.TrimSpace(req.RoleID)
-	if !validUUID(req.RoleID) {
+	if !validRecordID(req.RoleID) {
 		writeJSON(w, 2341, nil, "role_id 参数非法")
 		return
 	}
