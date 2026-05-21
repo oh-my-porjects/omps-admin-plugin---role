@@ -42,16 +42,11 @@ views:
       - key: edit
         type: row
         title: 编辑
-        api: PUT /api/role/{id}
-      - key: delete
-        type: row
-        title: 删除
-        api: DELETE /api/role/{id}
-        danger: true
+        api: PUT /api/role/update
   - key: permission_list
     type: table
     title: 权限点
-    api: GET /api/role/permissions
+    api: GET /api/role/permission-list
     columns:
       - field: id
         title: ID
