@@ -6,3 +6,5 @@ go 1.25
 // Go plugin 机制要求 .so 跟主进程用完全相同的工具链，差一个 patch 都会拒绝加载
 // 真相源在 omps-dev-workspace 根的 GO_VERSION 文件，用户项目从模板继承后不要手改
 toolchain go1.25.10
+
+require github.com/DATA-DOG/go-sqlmock v1.5.2

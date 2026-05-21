@@ -55,13 +55,15 @@ func (p *RolePlugin) initStorage(ctx context.Context) error {
 	if _, err := p.db.ExecContext(ctx, `
 		INSERT INTO role_permissions (id, code, name, description)
 		VALUES ($1, 'system.manage', 'System Manage', 'root management permission')
-		ON CONFLICT (id) DO NOTHING`, rootPermID); err != nil {
+		ON CONFLICT (code) DO UPDATE
+		SET name=EXCLUDED.name, description=EXCLUDED.description, updated_at=now()`, rootPermID); err != nil {
 		return err
 	}
 	if _, err := p.db.ExecContext(ctx, `
 		INSERT INTO role_permissions (id, code, name, description)
 		VALUES ($1, 'users.read', 'View Users', 'permission intentionally not assigned to root')
-		ON CONFLICT (id) DO NOTHING`, unassignedPermID); err != nil {
+		ON CONFLICT (code) DO UPDATE
+		SET name=EXCLUDED.name, description=EXCLUDED.description, updated_at=now()`, unassignedPermID); err != nil {
 		return err
 	}
 	if _, err := p.db.ExecContext(ctx, `
@@ -76,22 +78,29 @@ func (p *RolePlugin) initStorage(ctx context.Context) error {
 		ON CONFLICT (id) DO NOTHING`, disabledRoleID); err != nil {
 		return err
 	}
-	if _, err := p.db.ExecContext(ctx, `
-		INSERT INTO role_role_permissions (role_id, permission_id)
-		VALUES ($1, $2)
-		ON CONFLICT (role_id, permission_id) DO NOTHING`, rootRoleID, rootPermID); err != nil {
+	var rootPermissionID string
+	if err := p.db.QueryRowContext(ctx, `
+		SELECT id::text
+		FROM role_permissions
+		WHERE code='system.manage'`).Scan(&rootPermissionID); err != nil {
 		return err
 	}
 	if _, err := p.db.ExecContext(ctx, `
 		INSERT INTO role_role_permissions (role_id, permission_id)
 		VALUES ($1, $2)
-		ON CONFLICT (role_id, permission_id) DO NOTHING`, supportRoleID, rootPermID); err != nil {
+		ON CONFLICT (role_id, permission_id) DO NOTHING`, rootRoleID, rootPermissionID); err != nil {
 		return err
 	}
 	if _, err := p.db.ExecContext(ctx, `
 		INSERT INTO role_role_permissions (role_id, permission_id)
 		VALUES ($1, $2)
-		ON CONFLICT (role_id, permission_id) DO NOTHING`, disabledRoleID, rootPermID); err != nil {
+		ON CONFLICT (role_id, permission_id) DO NOTHING`, supportRoleID, rootPermissionID); err != nil {
+		return err
+	}
+	if _, err := p.db.ExecContext(ctx, `
+		INSERT INTO role_role_permissions (role_id, permission_id)
+		VALUES ($1, $2)
+		ON CONFLICT (role_id, permission_id) DO NOTHING`, disabledRoleID, rootPermissionID); err != nil {
 		return err
 	}
 	return nil
