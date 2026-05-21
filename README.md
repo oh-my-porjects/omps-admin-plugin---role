@@ -47,7 +47,7 @@
 
 ## Dependencies
 
-- `account` — 调用 `GET /api/admin-account/me` 和 `GET /api/admin-account/detail` 获取当前后台账号、超管状态和角色范围。
+- `account` — 调用 `GET /api/account/me` 和 `GET /api/account/detail` 获取当前后台账号、超管状态和角色范围。
 
 ## Dependents
 

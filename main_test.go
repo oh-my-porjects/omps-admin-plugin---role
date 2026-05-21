@@ -387,7 +387,7 @@ func withAdminSession(t *testing.T, p *RolePlugin, req *http.Request, ctx adminS
 	t.Helper()
 	token := "token-" + strings.ReplaceAll(ctx.AccountID, "-", "")
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/admin-account/detail" && r.URL.Query().Get("operator_session_token") == token && r.URL.Query().Get("account_id") == ctx.AccountID {
+		if r.URL.Path == "/api/account/detail" && r.URL.Query().Get("operator_session_token") == token && r.URL.Query().Get("account_id") == ctx.AccountID {
 			writeJSON(w, 0, map[string]any{
 				"account_id":     ctx.AccountID,
 				"is_super_admin": ctx.IsSuperAdmin,
@@ -395,7 +395,7 @@ func withAdminSession(t *testing.T, p *RolePlugin, req *http.Request, ctx adminS
 			}, "ok")
 			return
 		}
-		if r.URL.Path != "/api/admin-account/me" || r.URL.Query().Get("session_token") != token {
+		if r.URL.Path != "/api/account/me" || r.URL.Query().Get("session_token") != token {
 			writeJSON(w, 2212, nil, "会话不存在或已过期")
 			return
 		}

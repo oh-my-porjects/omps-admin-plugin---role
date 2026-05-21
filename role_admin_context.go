@@ -45,7 +45,7 @@ func (p *RolePlugin) fetchAdminAccountContext(r *http.Request, token string) (ad
 	if p == nil {
 		return adminAccountContext{}, false, errors.New("role plugin is nil")
 	}
-	endpoint := p.runtimeURL(r, "/api/admin-account/me") + "?session_token=" + url.QueryEscape(token)
+	endpoint := p.runtimeURL(r, "/api/account/me") + "?session_token=" + url.QueryEscape(token)
 	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, endpoint, nil)
 	if err != nil {
 		return adminAccountContext{}, false, err
@@ -88,7 +88,7 @@ func (p *RolePlugin) fetchAdminAccountContext(r *http.Request, token string) (ad
 }
 
 func (p *RolePlugin) fetchAdminAccountDetailContext(r *http.Request, token, accountID string) (adminAccountContext, bool, error) {
-	endpoint := p.runtimeURL(r, "/api/admin-account/detail") + "?operator_session_token=" + url.QueryEscape(token) + "&account_id=" + url.QueryEscape(accountID)
+	endpoint := p.runtimeURL(r, "/api/account/detail") + "?operator_session_token=" + url.QueryEscape(token) + "&account_id=" + url.QueryEscape(accountID)
 	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, endpoint, nil)
 	if err != nil {
 		return adminAccountContext{}, false, err
