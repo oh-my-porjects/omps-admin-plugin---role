@@ -7,57 +7,90 @@
   "public_apis": [
     {
       "method": "GET",
-      "path": "/api/role/hello"
+      "path": "/api/role/hello",
+      "title": "模块探活"
     },
     {
       "method": "POST",
-      "path": "/api/role/create"
+      "path": "/api/role/create",
+      "title": "创建角色"
     },
     {
       "method": "GET",
-      "path": "/api/role/list"
+      "path": "/api/role/list",
+      "title": "角色列表"
     },
     {
       "method": "GET",
-      "path": "/api/role/detail"
+      "path": "/api/role/detail",
+      "title": "角色详情"
     },
     {
       "method": "PUT",
-      "path": "/api/role/update"
+      "path": "/api/role/update",
+      "title": "更新角色"
     },
     {
       "method": "POST",
-      "path": "/api/role/permission-create"
+      "path": "/api/role/enable",
+      "title": "启用角色"
+    },
+    {
+      "method": "POST",
+      "path": "/api/role/disable",
+      "title": "禁用角色"
+    },
+    {
+      "method": "POST",
+      "path": "/api/role/delete",
+      "title": "删除角色"
     },
     {
       "method": "GET",
-      "path": "/api/role/permission-list"
+      "path": "/api/role/children-tree",
+      "title": "查子树"
+    },
+    {
+      "method": "POST",
+      "path": "/api/role/permission-create",
+      "title": "创建权限点"
+    },
+    {
+      "method": "GET",
+      "path": "/api/role/permission-list",
+      "title": "权限点列表"
     },
     {
       "method": "PUT",
-      "path": "/api/role/assign-permissions"
+      "path": "/api/role/assign-permissions",
+      "title": "分配角色权限"
     },
     {
       "method": "POST",
-      "path": "/api/role/check-permission"
+      "path": "/api/role/check-permission",
+      "title": "检查权限"
     },
     {
       "method": "POST",
-      "path": "/_internal/method-call/role"
+      "path": "/_internal/method-call/role",
+      "title": "内部方法调用"
     },
     {
       "method": "POST",
-      "path": "/_internal/scheduled-trigger/role"
+      "path": "/_internal/scheduled-trigger/role",
+      "title": "内部触发定时任务"
     },
     {
       "method": "POST",
-      "path": "/_internal/selftest/role"
+      "path": "/_internal/selftest/role",
+      "title": "废弃自测入口"
     }
   ],
   "admin_apis": [
     {
       "method": "POST",
-      "path": "/{admin_prefix}/api/role/admin/ping"
+      "path": "/{admin_prefix}/api/role/admin/ping",
+      "title": "管理后台探活"
     }
   ],
   "dependencies": [
@@ -84,10 +117,11 @@
     "exit_policy": "cooperative_cancel",
     "allows_new_work_while_unloading": false
   },
-  "related_requirements": [],
-  "last_generated_at": "2026-05-19T15:11:58Z",
+  "related_requirements": [
+    13
+  ],
+  "last_generated_at": "2026-05-20T04:23:07Z",
   "warnings": [
-    "缺少 api-docs.json，已从源码 Routes 降级解析",
     "缺少 schema.json，表 ownership 未能确定"
   ]
 }

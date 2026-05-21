@@ -45,7 +45,7 @@ func (p *RolePlugin) assignPermissions(ctx context.Context, roleID string, permi
 				return time.Time{}, err
 			}
 		}
-		if err := tx.QueryRowContext(ctx, "UPDATE role_roles SET updated_at=now() WHERE id=$1 RETURNING updated_at", roleID).Scan(&now); err != nil {
+		if err := tx.QueryRowContext(ctx, "UPDATE role_roles SET updated_at=now() WHERE id=$1 AND deleted_at IS NULL RETURNING updated_at", roleID).Scan(&now); err != nil {
 			return time.Time{}, err
 		}
 		return now, tx.Commit()
@@ -159,7 +159,7 @@ func (p *RolePlugin) childrenWithinPermissionSet(ctx context.Context, roleID str
 
 func (p *RolePlugin) childRoleIDs(ctx context.Context, roleID string) ([]string, error) {
 	if p.db != nil {
-		rows, err := p.db.QueryContext(ctx, "SELECT id::text FROM role_roles WHERE parent_id=$1", roleID)
+		rows, err := p.db.QueryContext(ctx, "SELECT id::text FROM role_roles WHERE parent_id=$1 AND deleted_at IS NULL", roleID)
 		if err != nil {
 			return nil, err
 		}
@@ -179,7 +179,7 @@ func (p *RolePlugin) childRoleIDs(ctx context.Context, roleID string) ([]string,
 	defer p.mu.Unlock()
 	var ids []string
 	for _, role := range p.roles {
-		if role.ParentID == roleID {
+		if role.ParentID == roleID && role.DeletedAt.IsZero() {
 			ids = append(ids, role.ID)
 		}
 	}

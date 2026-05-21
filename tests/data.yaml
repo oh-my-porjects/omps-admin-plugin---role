@@ -5,13 +5,22 @@ noise_fields: [updated_at]
 tables:
   role_roles:
     primary_key: id
-    range_filter: "name LIKE '${range_tag}%' OR description LIKE '${range_tag}%'"
-    snapshot_view: [id, name, parent_id, status, description, created_at, updated_at]
+    range_filter: "id LIKE '11111111-1111-4111-8111-%' OR name LIKE '${range_tag}%' OR description LIKE '${range_tag}%'"
+    snapshot_view: [id, name, parent_id, status, description, deleted_at, created_at, updated_at]
     snapshot_summary: "name, status, parent_id"
     seed_data:
       - {id: "11111111-1111-4111-8111-000000000001", name: "${range_tag}assign_top", parent_id: null, description: "${range_tag}role for permission assignment", status: "enabled", created_at: "now()", updated_at: "now()"}
       - {id: "11111111-1111-4111-8111-000000000002", name: "${range_tag}update_child", parent_id: "00000000-0000-0000-0000-000000000001", description: "${range_tag}role for update", status: "enabled", created_at: "now()", updated_at: "now()"}
       - {id: "11111111-1111-4111-8111-000000000003", name: "${range_tag}disabled_role", parent_id: null, description: "${range_tag}disabled role", status: "disabled", created_at: "now()", updated_at: "now()"}
+      - {id: "11111111-1111-4111-8111-000000000004", name: "${range_tag}tree_root", parent_id: "00000000-0000-0000-0000-000000000001", description: "${range_tag}tree root", status: "enabled", created_at: "now()", updated_at: "now()"}
+      - {id: "11111111-1111-4111-8111-000000000005", name: "${range_tag}tree_child", parent_id: "11111111-1111-4111-8111-000000000004", description: "${range_tag}tree child", status: "enabled", created_at: "now()", updated_at: "now()"}
+      - {id: "11111111-1111-4111-8111-000000000006", name: "${range_tag}tree_grandchild", parent_id: "11111111-1111-4111-8111-000000000005", description: "${range_tag}tree grandchild", status: "disabled", created_at: "now()", updated_at: "now()"}
+      - {id: "11111111-1111-4111-8111-000000000007", name: "${range_tag}delete_root", parent_id: "00000000-0000-0000-0000-000000000001", description: "${range_tag}delete root", status: "enabled", created_at: "now()", updated_at: "now()"}
+      - {id: "11111111-1111-4111-8111-000000000008", name: "${range_tag}delete_child", parent_id: "11111111-1111-4111-8111-000000000007", description: "${range_tag}delete child", status: "enabled", created_at: "now()", updated_at: "now()"}
+      - {id: "11111111-1111-4111-8111-000000000009", name: "${range_tag}toggle_enabled", parent_id: "00000000-0000-0000-0000-000000000001", description: "${range_tag}toggle enabled", status: "enabled", created_at: "now()", updated_at: "now()"}
+      - {id: "11111111-1111-4111-8111-000000000010", name: "${range_tag}toggle_disabled", parent_id: "00000000-0000-0000-0000-000000000001", description: "${range_tag}toggle disabled", status: "disabled", created_at: "now()", updated_at: "now()"}
+      - {id: "11111111-1111-4111-8111-000000000011", name: "${range_tag}disabled_parent", parent_id: "00000000-0000-0000-0000-000000000001", description: "${range_tag}disabled parent", status: "disabled", created_at: "now()", updated_at: "now()"}
+      - {id: "11111111-1111-4111-8111-000000000012", name: "${range_tag}child_under_disabled", parent_id: "11111111-1111-4111-8111-000000000011", description: "${range_tag}child under disabled", status: "disabled", created_at: "now()", updated_at: "now()"}
 
   role_permissions:
     primary_key: id

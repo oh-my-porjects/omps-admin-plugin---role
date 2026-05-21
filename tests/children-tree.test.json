@@ -1,0 +1,27 @@
+{
+  "api": "GET /api/role/children-tree",
+  "cases": [
+    {
+      "name": "get complete child tree",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "GET",
+      "path": "/api/role/children-tree?role_id=11111111-1111-4111-8111-000000000004",
+      "expect_status": 200,
+      "expect_business_status": 0,
+      "expect_field": {
+        "data.role_id": "11111111-1111-4111-8111-000000000004",
+        "data.children_count": 1
+      }
+    },
+    {
+      "name": "children tree rejects missing role id",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "GET",
+      "path": "/api/role/children-tree",
+      "expect_status": 200,
+      "expect_business_status": 2311
+    }
+  ]
+}

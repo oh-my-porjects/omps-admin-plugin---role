@@ -80,9 +80,9 @@ func (p *RolePlugin) handleRoleCreate(w http.ResponseWriter, r *http.Request) {
 		}
 		if !exists {
 			if manualParent {
-				writeJSON(w, 4103, nil, "手动指定的父级角色不存在")
+				writeJSON(w, 4103, nil, "手动指定的父级角色不存在或已删除")
 			} else {
-				writeJSON(w, 4107, nil, "当前账号绑定角色不存在或未启用")
+				writeJSON(w, 4107, nil, "当前账号绑定角色不存在、已删除或未启用")
 			}
 			return
 		}
@@ -209,8 +209,21 @@ func (p *RolePlugin) handleRoleUpdate(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, 2135, nil, "角色层级不允许形成循环")
 			return
 		}
-		if !validUUID(req.ParentID) || !p.roleExists(r.Context(), req.ParentID) {
+		if !validUUID(req.ParentID) {
 			writeJSON(w, 2134, nil, "父角色不存在或父角色设置不合法")
+			return
+		}
+		parentRole, exists, err := p.getRole(r.Context(), req.ParentID)
+		if err != nil {
+			writeJSON(w, 2138, nil, "更新角色失败")
+			return
+		}
+		if !exists {
+			writeJSON(w, 2134, nil, "父角色不存在或父角色设置不合法")
+			return
+		}
+		if parentRole.Status != "enabled" {
+			writeJSON(w, 2134, nil, "父角色不存在或未启用")
 			return
 		}
 		if p.wouldCreateCycle(r.Context(), req.RoleID, req.ParentID) {

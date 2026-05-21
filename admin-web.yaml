@@ -42,16 +42,29 @@ views:
       - key: edit
         type: row
         title: 编辑
-        api: PUT /api/role/{id}
+        api: PUT /api/role/update
+      - key: children_tree
+        type: row
+        title: 查看子角色
+        api: GET /api/role/children-tree
+      - key: disable
+        type: row
+        title: 禁用
+        api: POST /api/role/disable
+        danger: true
+      - key: enable
+        type: row
+        title: 启用
+        api: POST /api/role/enable
       - key: delete
         type: row
         title: 删除
-        api: DELETE /api/role/{id}
+        api: POST /api/role/delete
         danger: true
   - key: permission_list
     type: table
     title: 权限点
-    api: GET /api/role/permissions
+    api: GET /api/role/permission-list
     columns:
       - field: id
         title: ID
@@ -66,3 +79,10 @@ roles:
     title: 超级管理员
   - code: developer
     title: 开发者
+dangerous:
+  - endpoint_key: POST /api/role/delete
+    title: 删除角色
+    confirm: 确认删除该角色及其全部子角色？
+  - endpoint_key: POST /api/role/disable
+    title: 禁用角色
+    confirm: 确认禁用该角色？

@@ -186,6 +186,70 @@ func TestHandleRoleCreateErrors(t *testing.T) {
 	}
 }
 
+func TestDeletedRoleFilteringAcrossExistingAPIs(t *testing.T) {
+	p := testRolePlugin()
+	deletedRole := roleRecord{ID: "00000000-0000-0000-0000-000000000241", Name: "已删除角色", ParentID: rootRoleID, Status: "enabled"}
+	p.roles[deletedRole.ID] = deletedRole
+	_, _, err := p.deleteRoleCascade(context.Background(), deletedRole.ID)
+	if err != nil {
+		t.Fatalf("delete role: %v", err)
+	}
+
+	listReq := httptest.NewRequest(http.MethodGet, "/api/role/list?page=1&page_size=100", nil)
+	listRec := httptest.NewRecorder()
+	p.handleRoleList(listRec, listReq)
+	listResp := decodeTestResponse(t, listRec)
+	if listResp.Status != 0 {
+		t.Fatalf("list status = %d, want 0, msg=%s", listResp.Status, listResp.Msg)
+	}
+	items := listResp.Data.(map[string]any)["items"].([]any)
+	for _, item := range items {
+		if item.(map[string]any)["role_id"] == deletedRole.ID {
+			t.Fatal("deleted role should not appear in list")
+		}
+	}
+
+	detailReq := httptest.NewRequest(http.MethodGet, "/api/role/detail?role_id="+deletedRole.ID, nil)
+	detailRec := httptest.NewRecorder()
+	p.handleRoleDetail(detailRec, detailReq)
+	if resp := decodeTestResponse(t, detailRec); resp.Status != 2122 {
+		t.Fatalf("detail status = %d, want 2122, msg=%s", resp.Status, resp.Msg)
+	}
+
+	updateReq := httptest.NewRequest(http.MethodPut, "/api/role/update", jsonBody(map[string]any{
+		"role_id":     deletedRole.ID,
+		"name":        "已删除更新",
+		"description": "should fail",
+		"status":      "enabled",
+	}))
+	updateRec := httptest.NewRecorder()
+	p.handleRoleUpdate(updateRec, updateReq)
+	if resp := decodeTestResponse(t, updateRec); resp.Status != 2132 {
+		t.Fatalf("update status = %d, want 2132, msg=%s", resp.Status, resp.Msg)
+	}
+
+	assignReq := httptest.NewRequest(http.MethodPut, "/api/role/assign-permissions", jsonBody(map[string]any{
+		"role_id":        deletedRole.ID,
+		"permission_ids": []string{rootPermID},
+	}))
+	withAdminSession(t, p, assignReq, adminSessionContext{AccountID: "00000000-0000-0000-0000-000000000242", IsSuperAdmin: true})
+	assignRec := httptest.NewRecorder()
+	p.handleAssignPermissions(assignRec, assignReq)
+	if resp := decodeTestResponse(t, assignRec); resp.Status != 4202 {
+		t.Fatalf("assign status = %d, want 4202, msg=%s", resp.Status, resp.Msg)
+	}
+
+	checkReq := httptest.NewRequest(http.MethodPost, "/api/role/check-permission", jsonBody(map[string]any{
+		"role_id":         deletedRole.ID,
+		"permission_code": "system.manage",
+	}))
+	checkRec := httptest.NewRecorder()
+	p.handleCheckPermission(checkRec, checkReq)
+	if resp := decodeTestResponse(t, checkRec); resp.Status != 2173 {
+		t.Fatalf("check status = %d, want 2173, msg=%s", resp.Status, resp.Msg)
+	}
+}
+
 func TestCurrentAdminAccountContextIgnoresSpoofedIdentityHeaders(t *testing.T) {
 	p := testRolePlugin()
 	req := httptest.NewRequest(http.MethodPost, "/api/role/create", jsonBody(map[string]any{

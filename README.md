@@ -1,7 +1,7 @@
 # 角色公共模块 (role)
 
 ## Features
-提供后台角色树、权限点、角色权限分配与权限校验能力。
+提供角色树、权限点、角色权限分配、角色状态管理与权限校验能力。
 
 ## Endpoints
 
@@ -12,6 +12,10 @@
 | GET | /api/role/list | 分页查询角色列表 | public |
 | GET | /api/role/detail | 查询角色详情及已绑定权限 | public |
 | PUT | /api/role/update | 更新角色基础信息和层级 | public |
+| GET | /api/role/children-tree | 查询角色及完整子角色树 | public |
+| POST | /api/role/delete | 级联软删除角色及子角色 | public |
+| POST | /api/role/disable | 禁用角色 | public |
+| POST | /api/role/enable | 启用角色 | public |
 | POST | /api/role/permission-create | 创建权限点 | public |
 | GET | /api/role/permission-list | 分页查询权限点 | public |
 | PUT | /api/role/assign-permissions | 覆盖分配角色权限点 | public |
@@ -23,17 +27,17 @@
 
 ## Database
 
-- `role_roles` — 存储角色树节点；关键字段为 `id`、`name`、`parent_id`、`status`、`description`，`id` 为主键，`parent_id` 外键指向自身并禁止自引用。
+- `role_roles` — 存储角色树节点；关键字段为 `id`、`name`、`parent_id`、`status`、`description`、`deleted_at`，`id` 为主键，`parent_id` 外键指向自身并禁止自引用。
 - `role_permissions` — 存储权限点；关键字段为 `id`、`code`、`name`、`description`，`code` 全局唯一。
 - `role_role_permissions` — 存储角色与权限点绑定关系；关键字段为 `role_id`、`permission_id`，组合唯一，并通过外键级联清理。
 
 ## Design Notes
 
-- 角色采用父子树表达可管理范围，创建子角色时会校验父角色状态和当前后台账号的可操作范围。
+- 角色采用父子树表达管理范围，创建角色时会按当前后台账号上下文推导或校验父角色。
 - 子角色权限必须是父角色权限子集，避免下级角色获得上级未授权的能力。
 - 权限分配是覆盖式写入，并会阻止清理后导致子角色越权的操作。
-- 模块在无数据库连接时使用内存存储兜底，适合测试和本地运行，但不提供持久化保证。
-- 内部 method-call、scheduled-trigger、selftest 依赖 `RUNTIME_INTERNAL_TOKEN`，不面向外部业务调用。
+- 删除为级联软删除，根角色和系统内置角色受保护，状态变更与删除会通过 `ctx.Audit` 上报。
+- 无数据库连接时使用内存存储兜底，适合测试和本地运行，但不提供持久化保证。
 
 ## Environment Variables
 

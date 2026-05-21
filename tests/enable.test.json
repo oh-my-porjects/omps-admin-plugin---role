@@ -1,0 +1,39 @@
+{
+  "api": "POST /api/role/enable",
+  "cases": [
+    {
+      "name": "enable disabled role",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/api/role/enable",
+      "body": {
+        "role_id": "11111111-1111-4111-8111-000000000010"
+      },
+      "expect_status": 200,
+      "expect_business_status": 0,
+      "expect_field": {
+        "data.role_id": "11111111-1111-4111-8111-000000000010",
+        "data.status": "enabled"
+      },
+      "side_effect_tables": [
+        "role_roles"
+      ]
+    },
+    {
+      "name": "enable role under disabled parent fails",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "POST",
+      "path": "/api/role/enable",
+      "body": {
+        "role_id": "11111111-1111-4111-8111-000000000012"
+      },
+      "expect_status": 200,
+      "expect_business_status": 2344,
+      "side_effect_tables": [
+        "role_roles"
+      ]
+    }
+  ]
+}

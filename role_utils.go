@@ -20,6 +20,7 @@ func roleToResponse(role roleRecord, parentName string) roleResponse {
 		Description: role.Description,
 		CreatedAt:   formatTime(role.CreatedAt),
 		UpdatedAt:   formatTime(role.UpdatedAt),
+		DeletedAt:   formatTime(role.DeletedAt),
 		Permissions: []permissionResponse{},
 	}
 	if role.ParentID != "" {
@@ -55,6 +56,15 @@ func validStatus(s string) bool {
 
 func validUUID(s string) bool {
 	return uuidRE.MatchString(s)
+}
+
+func protectedRole(role roleRecord) bool {
+	switch role.ID {
+	case rootRoleID, supportRoleID, disabledRoleID:
+		return true
+	default:
+		return false
+	}
 }
 
 func validPermissionCode(s string) bool {

@@ -30,8 +30,8 @@ func (p *RolePlugin) createRole(ctx context.Context, name, parentID, description
 		err := p.db.QueryRowContext(ctx, `
 			INSERT INTO role_roles (name, parent_id, description, status)
 			VALUES ($1, $2, $3, $4)
-			RETURNING id::text, name, COALESCE(parent_id::text, ''), description, status, created_at, updated_at`,
-			name, parent, description, status).Scan(&role.ID, &role.Name, &role.ParentID, &role.Description, &role.Status, &role.CreatedAt, &role.UpdatedAt)
+			RETURNING id::text, name, COALESCE(parent_id::text, ''), description, status, created_at, updated_at, COALESCE(deleted_at, '0001-01-01'::timestamptz)`,
+			name, parent, description, status).Scan(&role.ID, &role.Name, &role.ParentID, &role.Description, &role.Status, &role.CreatedAt, &role.UpdatedAt, &role.DeletedAt)
 		return role, err
 	}
 	p.ensureMemoryStore()
@@ -58,8 +58,8 @@ func (p *RolePlugin) createRoleWithPermissions(ctx context.Context, name, parent
 		if err := tx.QueryRowContext(ctx, `
 			INSERT INTO role_roles (name, parent_id, description, status)
 			VALUES ($1, $2, $3, $4)
-			RETURNING id::text, name, COALESCE(parent_id::text, ''), description, status, created_at, updated_at`,
-			name, parent, description, status).Scan(&role.ID, &role.Name, &role.ParentID, &role.Description, &role.Status, &role.CreatedAt, &role.UpdatedAt); err != nil {
+			RETURNING id::text, name, COALESCE(parent_id::text, ''), description, status, created_at, updated_at, COALESCE(deleted_at, '0001-01-01'::timestamptz)`,
+			name, parent, description, status).Scan(&role.ID, &role.Name, &role.ParentID, &role.Description, &role.Status, &role.CreatedAt, &role.UpdatedAt, &role.DeletedAt); err != nil {
 			return roleRecord{}, err
 		}
 		for _, permissionID := range permissionIDs {
@@ -99,9 +99,9 @@ func (p *RolePlugin) updateRole(ctx context.Context, role roleRecord) (roleRecor
 		err := p.db.QueryRowContext(ctx, `
 			UPDATE role_roles
 			SET name=$1, parent_id=$2, description=$3, status=$4, updated_at=now()
-			WHERE id=$5
-			RETURNING id::text, name, COALESCE(parent_id::text, ''), description, status, created_at, updated_at`,
-			role.Name, parent, role.Description, role.Status, role.ID).Scan(&role.ID, &role.Name, &role.ParentID, &role.Description, &role.Status, &role.CreatedAt, &role.UpdatedAt)
+			WHERE id=$5 AND deleted_at IS NULL
+			RETURNING id::text, name, COALESCE(parent_id::text, ''), description, status, created_at, updated_at, COALESCE(deleted_at, '0001-01-01'::timestamptz)`,
+			role.Name, parent, role.Description, role.Status, role.ID).Scan(&role.ID, &role.Name, &role.ParentID, &role.Description, &role.Status, &role.CreatedAt, &role.UpdatedAt, &role.DeletedAt)
 		return role, err
 	}
 	p.ensureMemoryStore()
@@ -116,7 +116,7 @@ func (p *RolePlugin) getRole(ctx context.Context, roleID string) (roleRecord, bo
 		var role roleRecord
 		err := p.db.QueryRowContext(ctx, `
 			SELECT id::text, name, COALESCE(parent_id::text, ''), description, status, created_at, updated_at
-			FROM role_roles WHERE id=$1`, roleID).Scan(&role.ID, &role.Name, &role.ParentID, &role.Description, &role.Status, &role.CreatedAt, &role.UpdatedAt)
+			FROM role_roles WHERE id=$1 AND deleted_at IS NULL`, roleID).Scan(&role.ID, &role.Name, &role.ParentID, &role.Description, &role.Status, &role.CreatedAt, &role.UpdatedAt)
 		if errors.Is(err, sql.ErrNoRows) {
 			return roleRecord{}, false, nil
 		}
@@ -126,6 +126,9 @@ func (p *RolePlugin) getRole(ctx context.Context, roleID string) (roleRecord, bo
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	role, ok := p.roles[roleID]
+	if ok && !role.DeletedAt.IsZero() {
+		return roleRecord{}, false, nil
+	}
 	return role, ok, nil
 }
 
@@ -140,15 +143,15 @@ func (p *RolePlugin) siblingNameExists(ctx context.Context, excludeRoleID, paren
 		var err error
 		if parentID == "" {
 			if excludeRoleID == "" {
-				err = p.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM role_roles WHERE parent_id IS NULL AND name=$1`, name).Scan(&count)
+				err = p.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM role_roles WHERE parent_id IS NULL AND name=$1 AND deleted_at IS NULL`, name).Scan(&count)
 			} else {
-				err = p.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM role_roles WHERE parent_id IS NULL AND name=$1 AND id<>$2`, name, excludeRoleID).Scan(&count)
+				err = p.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM role_roles WHERE parent_id IS NULL AND name=$1 AND id<>$2 AND deleted_at IS NULL`, name, excludeRoleID).Scan(&count)
 			}
 		} else {
 			if excludeRoleID == "" {
-				err = p.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM role_roles WHERE parent_id=$1 AND name=$2`, parentID, name).Scan(&count)
+				err = p.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM role_roles WHERE parent_id=$1 AND name=$2 AND deleted_at IS NULL`, parentID, name).Scan(&count)
 			} else {
-				err = p.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM role_roles WHERE parent_id=$1 AND name=$2 AND id<>$3`, parentID, name, excludeRoleID).Scan(&count)
+				err = p.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM role_roles WHERE parent_id=$1 AND name=$2 AND id<>$3 AND deleted_at IS NULL`, parentID, name, excludeRoleID).Scan(&count)
 			}
 		}
 		return err == nil && count > 0
@@ -157,6 +160,9 @@ func (p *RolePlugin) siblingNameExists(ctx context.Context, excludeRoleID, paren
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	for _, role := range p.roles {
+		if !role.DeletedAt.IsZero() {
+			continue
+		}
 		if role.ID != excludeRoleID && role.ParentID == parentID && role.Name == name {
 			return true
 		}
@@ -166,7 +172,7 @@ func (p *RolePlugin) siblingNameExists(ctx context.Context, excludeRoleID, paren
 
 func (p *RolePlugin) listRoles(ctx context.Context, f roleListFilter) ([]roleResponse, int, error) {
 	if p.db != nil {
-		where, args := []string{"1=1"}, []any{}
+		where, args := []string{"r.deleted_at IS NULL"}, []any{}
 		if f.ParentSet {
 			if f.ParentID == "" {
 				where = append(where, "r.parent_id IS NULL")
@@ -192,7 +198,7 @@ func (p *RolePlugin) listRoles(ctx context.Context, f roleListFilter) ([]roleRes
 		rows, err := p.db.QueryContext(ctx, `
 			SELECT r.id::text, r.name, COALESCE(r.parent_id::text, ''), COALESCE(p.name, ''), r.status, r.description, r.created_at
 			FROM role_roles r
-			LEFT JOIN role_roles p ON p.id = r.parent_id
+			LEFT JOIN role_roles p ON p.id = r.parent_id AND p.deleted_at IS NULL
 			WHERE `+whereSQL+`
 			ORDER BY r.created_at DESC, r.id
 			LIMIT $`+strconv.Itoa(len(args)-1)+` OFFSET $`+strconv.Itoa(len(args)), args...)
@@ -216,6 +222,9 @@ func (p *RolePlugin) listRoles(ctx context.Context, f roleListFilter) ([]roleRes
 	defer p.mu.Unlock()
 	all := make([]roleRecord, 0, len(p.roles))
 	for _, role := range p.roles {
+		if !role.DeletedAt.IsZero() {
+			continue
+		}
 		if f.ParentSet && role.ParentID != f.ParentID {
 			continue
 		}

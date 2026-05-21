@@ -13,6 +13,7 @@ type roleRecord struct {
 	Status      string    `json:"status"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+	DeletedAt   time.Time `json:"deleted_at,omitempty"`
 }
 
 type permissionRecord struct {
@@ -34,8 +35,22 @@ type roleResponse struct {
 	Description   string               `json:"description"`
 	CreatedAt     string               `json:"created_at,omitempty"`
 	UpdatedAt     string               `json:"updated_at,omitempty"`
+	DeletedAt     string               `json:"deleted_at,omitempty"`
 	Permissions   []permissionResponse `json:"permissions"`
 	PermissionIDs []string             `json:"permission_ids,omitempty"`
+}
+
+type roleTreeNode struct {
+	RoleID        string         `json:"role_id"`
+	Name          string         `json:"name"`
+	ParentID      string         `json:"parent_id"`
+	ParentRoleID  string         `json:"parent_role_id"`
+	ParentName    string         `json:"parent_name"`
+	Status        string         `json:"status"`
+	Description   string         `json:"description"`
+	HasChildren   bool           `json:"has_children"`
+	ChildrenCount int            `json:"children_count"`
+	Children      []roleTreeNode `json:"children"`
 }
 
 type permissionResponse struct {

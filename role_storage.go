@@ -18,6 +18,7 @@ func (p *RolePlugin) initStorage(ctx context.Context) error {
 			parent_id UUID,
 			description TEXT NOT NULL DEFAULT '',
 			status TEXT NOT NULL DEFAULT 'enabled',
+			deleted_at TIMESTAMPTZ,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 			CONSTRAINT role_roles_parent_fk FOREIGN KEY (parent_id) REFERENCES role_roles(id),
@@ -45,6 +46,9 @@ func (p *RolePlugin) initStorage(ctx context.Context) error {
 		if _, err := p.db.ExecContext(ctx, stmt); err != nil {
 			return err
 		}
+	}
+	if _, err := p.db.ExecContext(ctx, `ALTER TABLE role_roles ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`); err != nil {
+		return err
 	}
 	if _, err := p.db.ExecContext(ctx, `
 		INSERT INTO role_roles (id, name, status, description)

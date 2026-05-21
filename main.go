@@ -86,6 +86,9 @@ type PluginContext struct {
 	// IsOnline 查询用户是否有在线 WebSocket 连接
 	IsOnline func(userID string) bool
 
+	// Audit 上报操作审计。危险写操作应提交 before/after，runtime 异步写入 admin_audit_log。
+	Audit func(action string, before any, after any, extra map[string]any)
+
 	// RegisterAuth 登录模块向 runtime 注册鉴权回调
 	// 一个项目通常只有一个登录模块；普通业务模块这个字段保持 nil 即可
 	//
@@ -123,6 +126,10 @@ var Routes = map[string]http.HandlerFunc{
 	"GET /api/role/list":               handleRoleList,
 	"GET /api/role/detail":             handleRoleDetail,
 	"PUT /api/role/update":             handleRoleUpdate,
+	"GET /api/role/children-tree":      handleRoleChildrenTree,
+	"POST /api/role/delete":            handleRoleDelete,
+	"POST /api/role/disable":           handleRoleDisable,
+	"POST /api/role/enable":            handleRoleEnable,
 	"POST /api/role/permission-create": handlePermissionCreate,
 	"GET /api/role/permission-list":    handlePermissionList,
 	"PUT /api/role/assign-permissions": handleAssignPermissions,
@@ -156,6 +163,22 @@ func handleRoleDetail(w http.ResponseWriter, r *http.Request) {
 
 func handleRoleUpdate(w http.ResponseWriter, r *http.Request) {
 	Plugin.handleRoleUpdate(w, r)
+}
+
+func handleRoleChildrenTree(w http.ResponseWriter, r *http.Request) {
+	Plugin.handleRoleChildrenTree(w, r)
+}
+
+func handleRoleDelete(w http.ResponseWriter, r *http.Request) {
+	Plugin.handleRoleDelete(w, r)
+}
+
+func handleRoleDisable(w http.ResponseWriter, r *http.Request) {
+	Plugin.handleRoleDisable(w, r)
+}
+
+func handleRoleEnable(w http.ResponseWriter, r *http.Request) {
+	Plugin.handleRoleEnable(w, r)
 }
 
 func handlePermissionCreate(w http.ResponseWriter, r *http.Request) {
@@ -197,6 +220,7 @@ type RolePlugin struct {
 	emit      func(userID, code string, data any) bool
 	broadcast func(ctx context.Context, userIDs []string, code string, data any) ([]int64, error)
 	isOnline  func(userID string) bool
+	audit     func(action string, before any, after any, extra map[string]any)
 
 	runtimeAddr string
 	adminAPIKey string
@@ -227,6 +251,7 @@ func (p *RolePlugin) Init(ctx PluginContext) error {
 	p.emit = ctx.Emit
 	p.broadcast = ctx.Broadcast
 	p.isOnline = ctx.IsOnline
+	p.audit = ctx.Audit
 	p.runtimeAddr = ctx.Config["RUNTIME_ADDR"]
 	p.adminAPIKey = ctx.Config["ADMIN_API_KEY"]
 	// 仅登录模块需要：把鉴权回调注册给 runtime；普通业务模块这一行可删
