@@ -35,6 +35,17 @@ func TestPluginShutdown(t *testing.T) {
 	}
 }
 
+func TestRuntimeURLFallsBackFromAdminProxyHost(t *testing.T) {
+	p := &RolePlugin{}
+	req := httptest.NewRequest(http.MethodGet, "/api/role/create", nil)
+	req.Host = "omps-shan-admin.link-api.com"
+	got := p.runtimeURL(req, "/api/account/me")
+	want := "http://127.0.0.1:8080/api/account/me"
+	if got != want {
+		t.Fatalf("runtimeURL = %s, want %s", got, want)
+	}
+}
+
 func TestHandleRoleCreateParentAndPermissions(t *testing.T) {
 	p := testRolePlugin()
 	req := httptest.NewRequest(http.MethodPost, "/api/role/create", jsonBody(map[string]any{
