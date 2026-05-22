@@ -1,5 +1,8 @@
 module: role
 module_title: 角色管理
+dangerous:
+  - POST /api/role/disable
+  - POST /api/role/delete
 menus:
   - key: roles
     title: 角色列表
