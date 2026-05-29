@@ -2,6 +2,7 @@ module: role
 module_title: 角色管理
 dangerous:
   - POST /api/role/disable
+  - POST /api/role/enable
   - POST /api/role/delete
 menus:
   - key: roles
@@ -117,6 +118,8 @@ views:
         type: row
         title: 启用
         api: POST /api/role/enable
+        danger: true
+        confirm: 确认启用该角色？
         fields:
           - field: role_id
             title: 角色 ID
