@@ -157,7 +157,7 @@ views:
   - key: role_children_tree
     type: detail
     title: 子角色树
-    api: GET /api/role/children-tree?role_id={role_id}
+    api: GET /api/role/children-tree
     fields:
       - field: role_id
         title: ID
