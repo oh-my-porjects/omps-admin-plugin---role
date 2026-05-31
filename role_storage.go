@@ -2,8 +2,23 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
+
+type builtInRoleSeed struct {
+	ID          string
+	LegacyName  string
+	Name        string
+	Status      string
+	Description string
+}
+
+var builtInRoleSeeds = []builtInRoleSeed{
+	{ID: rootRoleID, LegacyName: "Root", Name: "超级管理员", Status: "enabled", Description: "系统预设角色，拥有最高权限"},
+	{ID: supportRoleID, LegacyName: "Support", Name: "开发者", Status: "enabled", Description: "系统预设角色，开发人员使用"},
+	{ID: disabledRoleID, LegacyName: "Disabled Role", Name: "运营", Status: "enabled", Description: "系统预设角色，运营人员使用"},
+}
 
 func (p *RolePlugin) initStorage(ctx context.Context) error {
 	p.ensureMemoryStore()
@@ -50,17 +65,13 @@ func (p *RolePlugin) initStorage(ctx context.Context) error {
 	if _, err := p.db.ExecContext(ctx, `ALTER TABLE role_roles ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`); err != nil {
 		return err
 	}
-	if _, err := p.db.ExecContext(ctx, `
-		INSERT INTO role_roles (id, name, status, description)
-		VALUES ($1, '超级管理员', 'enabled', '系统预设角色，拥有最高权限')
-		ON CONFLICT (id) DO UPDATE
-		SET name=EXCLUDED.name,
-			parent_id=NULL,
-			status=EXCLUDED.status,
-			description=EXCLUDED.description,
-			deleted_at=NULL,
-			updated_at=now()`, rootRoleID); err != nil {
-		return err
+	roleIDs := make([]string, 0, len(builtInRoleSeeds))
+	for _, seed := range builtInRoleSeeds {
+		roleID, err := p.ensureBuiltInRole(ctx, seed)
+		if err != nil {
+			return err
+		}
+		roleIDs = append(roleIDs, roleID)
 	}
 	if _, err := p.db.ExecContext(ctx, `
 		INSERT INTO role_permissions (id, code, name, description)
@@ -76,30 +87,6 @@ func (p *RolePlugin) initStorage(ctx context.Context) error {
 		SET name=EXCLUDED.name, description=EXCLUDED.description, updated_at=now()`, unassignedPermID); err != nil {
 		return err
 	}
-	if _, err := p.db.ExecContext(ctx, `
-		INSERT INTO role_roles (id, name, status, description)
-		VALUES ($1, '开发者', 'enabled', '系统预设角色，开发人员使用')
-		ON CONFLICT (id) DO UPDATE
-		SET name=EXCLUDED.name,
-			parent_id=NULL,
-			status=EXCLUDED.status,
-			description=EXCLUDED.description,
-			deleted_at=NULL,
-			updated_at=now()`, supportRoleID); err != nil {
-		return err
-	}
-	if _, err := p.db.ExecContext(ctx, `
-		INSERT INTO role_roles (id, name, status, description)
-		VALUES ($1, '运营', 'enabled', '系统预设角色，运营人员使用')
-		ON CONFLICT (id) DO UPDATE
-		SET name=EXCLUDED.name,
-			parent_id=NULL,
-			status=EXCLUDED.status,
-			description=EXCLUDED.description,
-			deleted_at=NULL,
-			updated_at=now()`, disabledRoleID); err != nil {
-		return err
-	}
 	var rootPermissionID string
 	if err := p.db.QueryRowContext(ctx, `
 		SELECT id::text
@@ -107,25 +94,62 @@ func (p *RolePlugin) initStorage(ctx context.Context) error {
 		WHERE code='system.manage'`).Scan(&rootPermissionID); err != nil {
 		return err
 	}
-	if _, err := p.db.ExecContext(ctx, `
-		INSERT INTO role_role_permissions (role_id, permission_id)
-		VALUES ($1, $2)
-		ON CONFLICT (role_id, permission_id) DO NOTHING`, rootRoleID, rootPermissionID); err != nil {
-		return err
-	}
-	if _, err := p.db.ExecContext(ctx, `
-		INSERT INTO role_role_permissions (role_id, permission_id)
-		VALUES ($1, $2)
-		ON CONFLICT (role_id, permission_id) DO NOTHING`, supportRoleID, rootPermissionID); err != nil {
-		return err
-	}
-	if _, err := p.db.ExecContext(ctx, `
-		INSERT INTO role_role_permissions (role_id, permission_id)
-		VALUES ($1, $2)
-		ON CONFLICT (role_id, permission_id) DO NOTHING`, disabledRoleID, rootPermissionID); err != nil {
-		return err
+	for _, roleID := range roleIDs {
+		if _, err := p.db.ExecContext(ctx, `
+			INSERT INTO role_role_permissions (role_id, permission_id)
+			VALUES ($1, $2)
+			ON CONFLICT (role_id, permission_id) DO NOTHING`, roleID, rootPermissionID); err != nil {
+			return err
+		}
 	}
 	return nil
+}
+
+func (p *RolePlugin) ensureBuiltInRole(ctx context.Context, seed builtInRoleSeed) (string, error) {
+	var existingID string
+	err := p.db.QueryRowContext(ctx, `
+		SELECT id::text
+		FROM role_roles
+		WHERE name=$1
+		LIMIT 1`, seed.Name).Scan(&existingID)
+	if err == nil {
+		if _, err := p.db.ExecContext(ctx, `
+			UPDATE role_roles
+			SET parent_id=NULL,
+				status=$2,
+				description=$3,
+				deleted_at=NULL,
+				updated_at=now()
+			WHERE id=$1`, existingID, seed.Status, seed.Description); err != nil {
+			return "", err
+		}
+		if existingID != seed.ID {
+			if _, err := p.db.ExecContext(ctx, `
+				UPDATE role_roles
+				SET deleted_at=COALESCE(deleted_at, now()),
+					updated_at=now()
+				WHERE id=$1 AND name=$2`, seed.ID, seed.LegacyName); err != nil {
+				return "", err
+			}
+		}
+		return existingID, nil
+	}
+	if err != nil && err != sql.ErrNoRows {
+		return "", err
+	}
+	if _, err := p.db.ExecContext(ctx, `
+		INSERT INTO role_roles (id, name, status, description)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (id) DO UPDATE
+		SET name=EXCLUDED.name,
+			parent_id=NULL,
+			status=EXCLUDED.status,
+			description=EXCLUDED.description,
+			deleted_at=NULL,
+			updated_at=now()`, seed.ID, seed.Name, seed.Status, seed.Description); err != nil {
+		return "", err
+	}
+	return seed.ID, nil
 }
 
 func (p *RolePlugin) ensureMemoryStore() {

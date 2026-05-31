@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"regexp"
 	"testing"
 
@@ -20,20 +21,19 @@ func TestInitStorageUsesExistingPermissionIDForSeedBindings(t *testing.T) {
 		mock.ExpectExec("CREATE|ALTER").
 			WillReturnResult(sqlmock.NewResult(0, 0))
 	}
-	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO role_roles (id, name, status, description)")).
-		WithArgs(rootRoleID).
-		WillReturnResult(sqlmock.NewResult(0, 1))
+	for _, seed := range builtInRoleSeeds {
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id::text")).
+			WithArgs(seed.Name).
+			WillReturnError(sql.ErrNoRows)
+		mock.ExpectExec(regexp.QuoteMeta("INSERT INTO role_roles (id, name, status, description)")).
+			WithArgs(seed.ID, seed.Name, seed.Status, seed.Description).
+			WillReturnResult(sqlmock.NewResult(0, 1))
+	}
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO role_permissions (id, code, name, description)")).
 		WithArgs(rootPermID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO role_permissions (id, code, name, description)")).
 		WithArgs(unassignedPermID).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO role_roles (id, name, status, description)")).
-		WithArgs(supportRoleID).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO role_roles (id, name, status, description)")).
-		WithArgs(disabledRoleID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	existingRootPermID := "11111111-1111-1111-1111-111111111111"
