@@ -1527,7 +1527,7 @@
       "path": "/api/role/check-permission",
       "endpoint_key": "POST /api/role/check-permission",
       "title": "检查权限",
-      "description": "检查指定角色是否启用且直接绑定了指定权限点。",
+      "description": "检查指定角色是否启用且拥有指定权限点；角色拥有 system.manage 时视为全权限。",
       "auth": "public",
       "params": [
         {
@@ -1556,7 +1556,7 @@
           {
             "name": "allowed",
             "type": "boolean",
-            "description": "角色启用且直接拥有权限点时为 true。"
+            "description": "角色启用且直接拥有权限点，或拥有 system.manage 全权限时为 true。"
           },
           {
             "name": "role_status",

@@ -421,6 +421,17 @@ func (p *RolePlugin) handleCheckPermission(w http.ResponseWriter, r *http.Reques
 		writeJSON(w, 2173, nil, "角色不存在")
 		return
 	}
+	if role.Status == "enabled" {
+		hasSystemManage, err := p.roleHasPermissionCode(r.Context(), req.RoleID, "system.manage")
+		if err != nil {
+			writeJSON(w, 2175, nil, "权限校验失败")
+			return
+		}
+		if hasSystemManage {
+			writeJSON(w, 0, map[string]any{"allowed": true, "role_status": role.Status}, "")
+			return
+		}
+	}
 	perm, exists, err := p.getPermissionByCode(r.Context(), req.PermissionCode)
 	if err != nil {
 		writeJSON(w, 2175, nil, "权限校验失败")

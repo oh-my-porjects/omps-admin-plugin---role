@@ -22,11 +22,20 @@ func TestInitStorageUsesExistingPermissionIDForSeedBindings(t *testing.T) {
 			WillReturnResult(sqlmock.NewResult(0, 0))
 	}
 	for _, seed := range builtInRoleSeeds {
+		if seed.ParentName != "" {
+			parentID := rootRoleID
+			if seed.ParentName == "开发者" {
+				parentID = supportRoleID
+			}
+			mock.ExpectQuery(regexp.QuoteMeta("SELECT id::text")).
+				WithArgs(seed.ParentName).
+				WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(parentID))
+		}
 		mock.ExpectQuery(regexp.QuoteMeta("SELECT id::text")).
 			WithArgs(seed.Name).
 			WillReturnError(sql.ErrNoRows)
-		mock.ExpectExec(regexp.QuoteMeta("INSERT INTO role_roles (id, name, status, description)")).
-			WithArgs(seed.ID, seed.Name, seed.Status, seed.Description).
+		mock.ExpectExec(regexp.QuoteMeta("INSERT INTO role_roles (id, name, parent_id, status, description)")).
+			WithArgs(seed.ID, seed.Name, sqlmock.AnyArg(), seed.Status, seed.Description).
 			WillReturnResult(sqlmock.NewResult(0, 1))
 	}
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO role_permissions (id, code, name, description)")).

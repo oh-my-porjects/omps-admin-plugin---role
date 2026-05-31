@@ -266,6 +266,24 @@ func TestDeletedRoleFilteringAcrossExistingAPIs(t *testing.T) {
 	}
 }
 
+func TestSystemManageAllowsAnyPermissionCode(t *testing.T) {
+	p := testRolePlugin()
+	req := httptest.NewRequest(http.MethodPost, "/api/role/check-permission", jsonBody(map[string]any{
+		"role_id":         supportRoleID,
+		"permission_code": "admin_account.manage",
+	}))
+	rec := httptest.NewRecorder()
+	p.handleCheckPermission(rec, req)
+	resp := decodeTestResponse(t, rec)
+	if resp.Status != 0 {
+		t.Fatalf("status = %d, want 0, msg=%s", resp.Status, resp.Msg)
+	}
+	data := resp.Data.(map[string]any)
+	if data["allowed"] != true {
+		t.Fatalf("allowed = %v, want true", data["allowed"])
+	}
+}
+
 func TestCurrentAdminAccountContextIgnoresSpoofedIdentityHeaders(t *testing.T) {
 	p := testRolePlugin()
 	req := httptest.NewRequest(http.MethodPost, "/api/role/create", jsonBody(map[string]any{
@@ -309,6 +327,9 @@ func TestHandleAssignPermissionsMultiple(t *testing.T) {
 
 func TestHandleAssignPermissionsAcceptsLegacyShortPermissionIDs(t *testing.T) {
 	p := testRolePlugin()
+	operatorRole := p.roles[disabledRoleID]
+	operatorRole.ParentID = ""
+	p.roles[disabledRoleID] = operatorRole
 	legacyPerm := permissionRecord{ID: "KNaXAHF3yTFD", Code: "legacy.short", Name: "Legacy Short"}
 	p.permissions[legacyPerm.ID] = legacyPerm
 	p.rolePerms[rootRoleID][legacyPerm.ID] = true

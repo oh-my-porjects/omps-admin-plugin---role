@@ -12,6 +12,9 @@ func TestHandleRoleChildrenTree(t *testing.T) {
 	parent := p.roles[supportRoleID]
 	parent.ParentID = rootRoleID
 	p.roles[supportRoleID] = parent
+	operator := p.roles[disabledRoleID]
+	operator.ParentID = ""
+	p.roles[disabledRoleID] = operator
 	nowChild := roleRecord{ID: "00000000-0000-0000-0000-000000000201", Name: "内容运营", ParentID: supportRoleID, Status: "enabled"}
 	nowGrandChild := roleRecord{ID: "00000000-0000-0000-0000-000000000202", Name: "审核专员", ParentID: nowChild.ID, Status: "disabled"}
 	p.roles[nowChild.ID] = nowChild

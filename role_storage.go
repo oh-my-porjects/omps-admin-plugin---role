@@ -10,14 +10,15 @@ type builtInRoleSeed struct {
 	ID          string
 	LegacyName  string
 	Name        string
+	ParentName  string
 	Status      string
 	Description string
 }
 
 var builtInRoleSeeds = []builtInRoleSeed{
 	{ID: rootRoleID, LegacyName: "Root", Name: "超级管理员", Status: "enabled", Description: "系统预设角色，拥有最高权限"},
-	{ID: supportRoleID, LegacyName: "Support", Name: "开发者", Status: "enabled", Description: "系统预设角色，开发人员使用"},
-	{ID: disabledRoleID, LegacyName: "Disabled Role", Name: "运营", Status: "enabled", Description: "系统预设角色，运营人员使用"},
+	{ID: supportRoleID, LegacyName: "Support", Name: "开发者", ParentName: "超级管理员", Status: "enabled", Description: "系统预设角色，开发人员使用"},
+	{ID: disabledRoleID, LegacyName: "Disabled Role", Name: "运营", ParentName: "开发者", Status: "enabled", Description: "系统预设角色，运营人员使用"},
 }
 
 func (p *RolePlugin) initStorage(ctx context.Context) error {
@@ -106,8 +107,12 @@ func (p *RolePlugin) initStorage(ctx context.Context) error {
 }
 
 func (p *RolePlugin) ensureBuiltInRole(ctx context.Context, seed builtInRoleSeed) (string, error) {
+	parentID, err := p.builtInParentID(ctx, seed.ParentName)
+	if err != nil {
+		return "", err
+	}
 	var existingID string
-	err := p.db.QueryRowContext(ctx, `
+	err = p.db.QueryRowContext(ctx, `
 		SELECT id::text
 		FROM role_roles
 		WHERE name=$1
@@ -115,12 +120,12 @@ func (p *RolePlugin) ensureBuiltInRole(ctx context.Context, seed builtInRoleSeed
 	if err == nil {
 		if _, err := p.db.ExecContext(ctx, `
 			UPDATE role_roles
-			SET parent_id=NULL,
-				status=$2,
-				description=$3,
+			SET parent_id=$2,
+				status=$3,
+				description=$4,
 				deleted_at=NULL,
 				updated_at=now()
-			WHERE id=$1`, existingID, seed.Status, seed.Description); err != nil {
+			WHERE id=$1`, existingID, parentID, seed.Status, seed.Description); err != nil {
 			return "", err
 		}
 		if existingID != seed.ID {
@@ -138,18 +143,34 @@ func (p *RolePlugin) ensureBuiltInRole(ctx context.Context, seed builtInRoleSeed
 		return "", err
 	}
 	if _, err := p.db.ExecContext(ctx, `
-		INSERT INTO role_roles (id, name, status, description)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO role_roles (id, name, parent_id, status, description)
+		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (id) DO UPDATE
 		SET name=EXCLUDED.name,
-			parent_id=NULL,
+			parent_id=EXCLUDED.parent_id,
 			status=EXCLUDED.status,
 			description=EXCLUDED.description,
 			deleted_at=NULL,
-			updated_at=now()`, seed.ID, seed.Name, seed.Status, seed.Description); err != nil {
+			updated_at=now()`, seed.ID, seed.Name, parentID, seed.Status, seed.Description); err != nil {
 		return "", err
 	}
 	return seed.ID, nil
+}
+
+func (p *RolePlugin) builtInParentID(ctx context.Context, parentName string) (sql.NullString, error) {
+	if parentName == "" {
+		return sql.NullString{}, nil
+	}
+	var parentID string
+	err := p.db.QueryRowContext(ctx, `
+		SELECT id::text
+		FROM role_roles
+		WHERE name=$1 AND deleted_at IS NULL
+		LIMIT 1`, parentName).Scan(&parentID)
+	if err != nil {
+		return sql.NullString{}, err
+	}
+	return sql.NullString{String: parentID, Valid: true}, nil
 }
 
 func (p *RolePlugin) ensureMemoryStore() {
@@ -169,8 +190,8 @@ func (p *RolePlugin) ensureMemoryStore() {
 		p.roles[rootRoleID] = roleRecord{ID: rootRoleID, Name: "超级管理员", Status: "enabled", Description: "系统预设角色，拥有最高权限", CreatedAt: now, UpdatedAt: now}
 		p.permissions[rootPermID] = permissionRecord{ID: rootPermID, Code: "system.manage", Name: "System Manage", CreatedAt: now, UpdatedAt: now}
 		p.permissions[unassignedPermID] = permissionRecord{ID: unassignedPermID, Code: "users.read", Name: "View Users", Description: "permission intentionally not assigned to root", CreatedAt: now, UpdatedAt: now}
-		p.roles[supportRoleID] = roleRecord{ID: supportRoleID, Name: "开发者", Status: "enabled", Description: "系统预设角色，开发人员使用", CreatedAt: now, UpdatedAt: now}
-		p.roles[disabledRoleID] = roleRecord{ID: disabledRoleID, Name: "运营", Status: "enabled", Description: "系统预设角色，运营人员使用", CreatedAt: now, UpdatedAt: now}
+		p.roles[supportRoleID] = roleRecord{ID: supportRoleID, Name: "开发者", ParentID: rootRoleID, Status: "enabled", Description: "系统预设角色，开发人员使用", CreatedAt: now, UpdatedAt: now}
+		p.roles[disabledRoleID] = roleRecord{ID: disabledRoleID, Name: "运营", ParentID: supportRoleID, Status: "enabled", Description: "系统预设角色，运营人员使用", CreatedAt: now, UpdatedAt: now}
 		p.rolePerms[rootRoleID] = map[string]bool{rootPermID: true}
 		p.rolePerms[supportRoleID] = map[string]bool{rootPermID: true}
 		p.rolePerms[disabledRoleID] = map[string]bool{rootPermID: true}

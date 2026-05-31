@@ -212,6 +212,14 @@ func (p *RolePlugin) roleDirectlyHasPermission(ctx context.Context, roleID, perm
 	return p.rolePerms[roleID][permissionID]
 }
 
+func (p *RolePlugin) roleHasPermissionCode(ctx context.Context, roleID, permissionCode string) (bool, error) {
+	perm, exists, err := p.getPermissionByCode(ctx, permissionCode)
+	if err != nil || !exists {
+		return false, err
+	}
+	return p.roleDirectlyHasPermission(ctx, roleID, perm.ID), nil
+}
+
 func permissionSetWithin(parentSet map[string]bool, childSet map[string]bool) bool {
 	if parentSet == nil {
 		return true
