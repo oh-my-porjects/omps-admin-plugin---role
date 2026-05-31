@@ -304,8 +304,10 @@ func TestCurrentAdminAccountContextIgnoresSpoofedIdentityHeaders(t *testing.T) {
 
 func TestHandleAssignPermissionsMultiple(t *testing.T) {
 	p := testRolePlugin()
+	roleID := "00000000-0000-0000-0000-000000000301"
+	p.roles[roleID] = roleRecord{ID: roleID, Name: "顶级测试角色", Status: "enabled"}
 	req := httptest.NewRequest(http.MethodPut, "/api/role/assign-permissions", jsonBody(map[string]any{
-		"role_id":        rootRoleID,
+		"role_id":        roleID,
 		"permission_ids": []string{rootPermID, unassignedPermID},
 	}))
 	withAdminSession(t, p, req, adminSessionContext{
@@ -330,11 +332,13 @@ func TestHandleAssignPermissionsAcceptsLegacyShortPermissionIDs(t *testing.T) {
 	operatorRole := p.roles[disabledRoleID]
 	operatorRole.ParentID = ""
 	p.roles[disabledRoleID] = operatorRole
+	roleID := "00000000-0000-0000-0000-000000000302"
+	p.roles[roleID] = roleRecord{ID: roleID, Name: "开发测试", ParentID: rootRoleID, Status: "enabled"}
 	legacyPerm := permissionRecord{ID: "KNaXAHF3yTFD", Code: "legacy.short", Name: "Legacy Short"}
 	p.permissions[legacyPerm.ID] = legacyPerm
 	p.rolePerms[rootRoleID][legacyPerm.ID] = true
 	req := httptest.NewRequest(http.MethodPut, "/api/role/assign-permissions", jsonBody(map[string]any{
-		"role_id":        supportRoleID,
+		"role_id":        roleID,
 		"permission_ids": []string{legacyPerm.ID},
 	}))
 	withAdminSession(t, p, req, adminSessionContext{
@@ -355,6 +359,48 @@ func TestHandleAssignPermissionsAcceptsLegacyShortPermissionIDs(t *testing.T) {
 	}
 }
 
+func TestHandleAssignPermissionsProtectsFullPermissionBuiltIns(t *testing.T) {
+	p := testRolePlugin()
+	liveLikeDeveloper := roleRecord{ID: "3h68hUmdv8BQ", Name: "开发者", ParentID: rootRoleID, Status: "enabled"}
+	p.roles[liveLikeDeveloper.ID] = liveLikeDeveloper
+	p.rolePerms[liveLikeDeveloper.ID] = map[string]bool{rootPermID: true}
+
+	for _, roleID := range []string{rootRoleID, supportRoleID, liveLikeDeveloper.ID} {
+		req := httptest.NewRequest(http.MethodPut, "/api/role/assign-permissions", jsonBody(map[string]any{
+			"role_id":        roleID,
+			"permission_ids": []string{rootPermID},
+		}))
+		withAdminSession(t, p, req, adminSessionContext{
+			AccountID:    "00000000-0000-0000-0000-000000000303",
+			IsSuperAdmin: true,
+		})
+		rec := httptest.NewRecorder()
+		p.handleAssignPermissions(rec, req)
+		resp := decodeTestResponse(t, rec)
+		if resp.Status != 4203 {
+			t.Fatalf("role %s status = %d, want 4203, msg=%s", roleID, resp.Status, resp.Msg)
+		}
+	}
+}
+
+func TestHandleAssignPermissionsAllowsOperatorBuiltIn(t *testing.T) {
+	p := testRolePlugin()
+	req := httptest.NewRequest(http.MethodPut, "/api/role/assign-permissions", jsonBody(map[string]any{
+		"role_id":        disabledRoleID,
+		"permission_ids": []string{rootPermID},
+	}))
+	withAdminSession(t, p, req, adminSessionContext{
+		AccountID:    "00000000-0000-0000-0000-000000000304",
+		IsSuperAdmin: true,
+	})
+	rec := httptest.NewRecorder()
+	p.handleAssignPermissions(rec, req)
+	resp := decodeTestResponse(t, rec)
+	if resp.Status != 0 {
+		t.Fatalf("status = %d, want 0, msg=%s", resp.Status, resp.Msg)
+	}
+}
+
 func TestHandleAssignPermissionsErrors(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -370,7 +416,7 @@ func TestHandleAssignPermissionsErrors(t *testing.T) {
 		},
 		{
 			name:       "权限不存在",
-			body:       map[string]any{"role_id": rootRoleID, "permission_ids": []string{"99999999-9999-9999-9999-999999999999"}},
+			body:       map[string]any{"role_id": "00000000-0000-0000-0000-000000000305", "permission_ids": []string{"99999999-9999-9999-9999-999999999999"}},
 			session:    &adminSessionContext{AccountID: "00000000-0000-0000-0000-000000000111", IsSuperAdmin: true},
 			wantStatus: 4204,
 		},
@@ -382,13 +428,16 @@ func TestHandleAssignPermissionsErrors(t *testing.T) {
 		},
 		{
 			name:       "缺少后台账号上下文",
-			body:       map[string]any{"role_id": rootRoleID, "permission_ids": []string{rootPermID}},
+			body:       map[string]any{"role_id": "00000000-0000-0000-0000-000000000306", "permission_ids": []string{rootPermID}},
 			wantStatus: 4203,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := testRolePlugin()
+			for _, roleID := range []string{"00000000-0000-0000-0000-000000000305", "00000000-0000-0000-0000-000000000306"} {
+				p.roles[roleID] = roleRecord{ID: roleID, Name: "权限测试角色", Status: "enabled"}
+			}
 			if tt.body["role_id"] == disabledRoleID {
 				role := p.roles[disabledRoleID]
 				role.Status = "disabled"

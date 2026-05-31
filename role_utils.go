@@ -66,6 +66,23 @@ func protectedRole(role roleRecord) bool {
 	switch role.ID {
 	case rootRoleID, supportRoleID, disabledRoleID:
 		return true
+	}
+	return builtInRoleName(role.Name)
+}
+
+func builtInRoleName(name string) bool {
+	switch name {
+	case "超级管理员", "开发者", "运营":
+		return true
+	default:
+		return false
+	}
+}
+
+func fullPermissionBuiltInRole(role roleRecord) bool {
+	switch role.Name {
+	case "超级管理员", "开发者":
+		return true
 	default:
 		return false
 	}

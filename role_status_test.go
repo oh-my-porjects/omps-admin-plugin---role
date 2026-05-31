@@ -96,6 +96,16 @@ func TestHandleRoleDeleteProtected(t *testing.T) {
 	if resp.Status != 2323 {
 		t.Fatalf("status = %d, want 2323, msg=%s", resp.Status, resp.Msg)
 	}
+
+	liveLikeOperator := roleRecord{ID: "jt38GzzJ1Egf", Name: "运营", ParentID: supportRoleID, Status: "enabled"}
+	p.roles[liveLikeOperator.ID] = liveLikeOperator
+	liveReq := httptest.NewRequest(http.MethodPost, "/api/role/delete", jsonBody(map[string]any{"role_id": liveLikeOperator.ID}))
+	liveRec := httptest.NewRecorder()
+	p.handleRoleDelete(liveRec, liveReq)
+	liveResp := decodeTestResponse(t, liveRec)
+	if liveResp.Status != 2323 {
+		t.Fatalf("live-like status = %d, want 2323, msg=%s", liveResp.Status, liveResp.Msg)
+	}
 }
 
 func TestHandleRoleDisableEnable(t *testing.T) {

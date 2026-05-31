@@ -340,6 +340,10 @@ func (p *RolePlugin) handleAssignPermissions(w http.ResponseWriter, r *http.Requ
 		writeJSON(w, 4203, nil, "角色状态不允许分配权限")
 		return
 	}
+	if fullPermissionBuiltInRole(role) {
+		writeJSON(w, 4203, nil, "内置全权限角色不允许分配权限")
+		return
+	}
 	if req.PermissionIDs == nil {
 		writeJSON(w, 4201, nil, "权限点 ID 列表格式不合法")
 		return

@@ -106,6 +106,9 @@ views:
         type: row
         title: 禁用
         api: POST /api/role/disable
+        hide_when:
+          field: name
+          in: [超级管理员, 开发者, 运营]
         danger: true
         confirm: 确认禁用该角色？
         fields:
@@ -130,6 +133,9 @@ views:
         type: row
         title: 删除
         api: POST /api/role/delete
+        hide_when:
+          field: name
+          in: [超级管理员, 开发者, 运营]
         danger: true
         confirm: 确认删除该角色及其全部子角色？
         fields:
@@ -142,6 +148,9 @@ views:
         type: row
         title: 分配权限
         api: PUT /api/role/assign-permissions
+        hide_when:
+          field: name
+          in: [超级管理员, 开发者]
         fields:
           - field: role_id
             title: 角色 ID
