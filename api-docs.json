@@ -432,12 +432,12 @@
           "items": [
             {
               "role_id": "00000000-0000-0000-0000-000000000003",
-              "name": "Support",
-              "parent_id": "00000000-0000-0000-0000-000000000001",
-              "parent_role_id": "00000000-0000-0000-0000-000000000001",
-              "parent_name": "Root",
+              "name": "开发者",
+              "parent_id": "",
+              "parent_role_id": "",
+              "parent_name": "",
               "status": "enabled",
-              "description": "bootstrap child role",
+              "description": "系统预设角色，开发人员使用",
               "created_at": "2026-05-20T04:00:00Z",
               "updated_at": "",
               "permissions": []
@@ -571,12 +571,12 @@
         "status": 0,
         "data": {
           "role_id": "00000000-0000-0000-0000-000000000001",
-          "name": "Root",
+          "name": "超级管理员",
           "parent_id": "",
           "parent_role_id": "",
           "parent_name": "",
           "status": "enabled",
-          "description": "system root role",
+          "description": "系统预设角色，拥有最高权限",
           "created_at": "2026-05-20T04:00:00Z",
           "updated_at": "2026-05-20T04:00:00Z",
           "permissions": [
@@ -1198,7 +1198,7 @@
           "name": "运营中心",
           "parent_id": "00000000-0000-0000-0000-000000000001",
           "parent_role_id": "00000000-0000-0000-0000-000000000001",
-          "parent_name": "Root",
+          "parent_name": "超级管理员",
           "status": "enabled",
           "description": "运营团队根角色",
           "has_children": true,

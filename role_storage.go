@@ -52,8 +52,14 @@ func (p *RolePlugin) initStorage(ctx context.Context) error {
 	}
 	if _, err := p.db.ExecContext(ctx, `
 		INSERT INTO role_roles (id, name, status, description)
-		VALUES ($1, 'Root', 'enabled', 'system root role')
-		ON CONFLICT (id) DO NOTHING`, rootRoleID); err != nil {
+		VALUES ($1, '超级管理员', 'enabled', '系统预设角色，拥有最高权限')
+		ON CONFLICT (id) DO UPDATE
+		SET name=EXCLUDED.name,
+			parent_id=NULL,
+			status=EXCLUDED.status,
+			description=EXCLUDED.description,
+			deleted_at=NULL,
+			updated_at=now()`, rootRoleID); err != nil {
 		return err
 	}
 	if _, err := p.db.ExecContext(ctx, `
@@ -71,15 +77,27 @@ func (p *RolePlugin) initStorage(ctx context.Context) error {
 		return err
 	}
 	if _, err := p.db.ExecContext(ctx, `
-		INSERT INTO role_roles (id, name, parent_id, status, description)
-		VALUES ($1, 'Support', $2, 'enabled', 'bootstrap child role')
-		ON CONFLICT (id) DO NOTHING`, supportRoleID, rootRoleID); err != nil {
+		INSERT INTO role_roles (id, name, status, description)
+		VALUES ($1, '开发者', 'enabled', '系统预设角色，开发人员使用')
+		ON CONFLICT (id) DO UPDATE
+		SET name=EXCLUDED.name,
+			parent_id=NULL,
+			status=EXCLUDED.status,
+			description=EXCLUDED.description,
+			deleted_at=NULL,
+			updated_at=now()`, supportRoleID); err != nil {
 		return err
 	}
 	if _, err := p.db.ExecContext(ctx, `
 		INSERT INTO role_roles (id, name, status, description)
-		VALUES ($1, 'Disabled Role', 'disabled', 'bootstrap disabled role')
-		ON CONFLICT (id) DO NOTHING`, disabledRoleID); err != nil {
+		VALUES ($1, '运营', 'enabled', '系统预设角色，运营人员使用')
+		ON CONFLICT (id) DO UPDATE
+		SET name=EXCLUDED.name,
+			parent_id=NULL,
+			status=EXCLUDED.status,
+			description=EXCLUDED.description,
+			deleted_at=NULL,
+			updated_at=now()`, disabledRoleID); err != nil {
 		return err
 	}
 	var rootPermissionID string
@@ -124,11 +142,11 @@ func (p *RolePlugin) ensureMemoryStore() {
 	}
 	if _, exists := p.roles[rootRoleID]; !exists {
 		now := time.Now().UTC()
-		p.roles[rootRoleID] = roleRecord{ID: rootRoleID, Name: "Root", Status: "enabled", CreatedAt: now, UpdatedAt: now}
+		p.roles[rootRoleID] = roleRecord{ID: rootRoleID, Name: "超级管理员", Status: "enabled", Description: "系统预设角色，拥有最高权限", CreatedAt: now, UpdatedAt: now}
 		p.permissions[rootPermID] = permissionRecord{ID: rootPermID, Code: "system.manage", Name: "System Manage", CreatedAt: now, UpdatedAt: now}
 		p.permissions[unassignedPermID] = permissionRecord{ID: unassignedPermID, Code: "users.read", Name: "View Users", Description: "permission intentionally not assigned to root", CreatedAt: now, UpdatedAt: now}
-		p.roles[supportRoleID] = roleRecord{ID: supportRoleID, Name: "Support", ParentID: rootRoleID, Status: "enabled", Description: "bootstrap child role", CreatedAt: now, UpdatedAt: now}
-		p.roles[disabledRoleID] = roleRecord{ID: disabledRoleID, Name: "Disabled Role", Status: "disabled", Description: "bootstrap disabled role", CreatedAt: now, UpdatedAt: now}
+		p.roles[supportRoleID] = roleRecord{ID: supportRoleID, Name: "开发者", Status: "enabled", Description: "系统预设角色，开发人员使用", CreatedAt: now, UpdatedAt: now}
+		p.roles[disabledRoleID] = roleRecord{ID: disabledRoleID, Name: "运营", Status: "enabled", Description: "系统预设角色，运营人员使用", CreatedAt: now, UpdatedAt: now}
 		p.rolePerms[rootRoleID] = map[string]bool{rootPermID: true}
 		p.rolePerms[supportRoleID] = map[string]bool{rootPermID: true}
 		p.rolePerms[disabledRoleID] = map[string]bool{rootPermID: true}

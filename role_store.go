@@ -172,7 +172,7 @@ func (p *RolePlugin) siblingNameExists(ctx context.Context, excludeRoleID, paren
 
 func (p *RolePlugin) listRoles(ctx context.Context, f roleListFilter) ([]roleResponse, int, error) {
 	if p.db != nil {
-		where, args := []string{"r.deleted_at IS NULL"}, []any{}
+		where, args := []string{"r.deleted_at IS NULL", "r.name NOT IN ('Root', 'Support', 'Disabled Role')"}, []any{}
 		if f.ParentSet {
 			if f.ParentID == "" {
 				where = append(where, "r.parent_id IS NULL")

@@ -29,8 +29,8 @@ func TestInitStorageUsesExistingPermissionIDForSeedBindings(t *testing.T) {
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO role_permissions (id, code, name, description)")).
 		WithArgs(unassignedPermID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO role_roles (id, name, parent_id, status, description)")).
-		WithArgs(supportRoleID, rootRoleID).
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO role_roles (id, name, status, description)")).
+		WithArgs(supportRoleID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO role_roles (id, name, status, description)")).
 		WithArgs(disabledRoleID).

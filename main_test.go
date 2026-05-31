@@ -185,6 +185,11 @@ func TestHandleRoleCreateErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := testRolePlugin()
+			if len(tt.session.RoleIDs) == 1 && tt.session.RoleIDs[0] == disabledRoleID {
+				role := p.roles[disabledRoleID]
+				role.Status = "disabled"
+				p.roles[disabledRoleID] = role
+			}
 			req := httptest.NewRequest(http.MethodPost, "/api/role/create", jsonBody(tt.body))
 			withAdminSession(t, p, req, tt.session)
 			rec := httptest.NewRecorder()
@@ -363,6 +368,11 @@ func TestHandleAssignPermissionsErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := testRolePlugin()
+			if tt.body["role_id"] == disabledRoleID {
+				role := p.roles[disabledRoleID]
+				role.Status = "disabled"
+				p.roles[disabledRoleID] = role
+			}
 			req := httptest.NewRequest(http.MethodPut, "/api/role/assign-permissions", jsonBody(tt.body))
 			if tt.session != nil {
 				withAdminSession(t, p, req, *tt.session)
