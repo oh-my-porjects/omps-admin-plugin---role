@@ -23,7 +23,7 @@ views:
     columns:
       - field: role_id
         title: ID
-        render: short_id
+        render: text
       - field: name
         title: 角色名
       - field: parent_name
