@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 )
 
@@ -118,30 +119,33 @@ func (p *RolePlugin) ensureBuiltInRole(ctx context.Context, seed builtInRoleSeed
 		WHERE name=$1
 		LIMIT 1`, seed.Name).Scan(&existingID)
 	if err == nil {
-		if _, err := p.db.ExecContext(ctx, `
-			UPDATE role_roles
-			SET parent_id=$2,
-				status=$3,
-				description=$4,
-				deleted_at=NULL,
-				updated_at=now()
-			WHERE id=$1`, existingID, parentID, seed.Status, seed.Description); err != nil {
-			return "", err
-		}
 		if existingID != seed.ID {
-			if _, err := p.db.ExecContext(ctx, `
-				UPDATE role_roles
-				SET deleted_at=COALESCE(deleted_at, now()),
-					updated_at=now()
-				WHERE id=$1 AND name=$2`, seed.ID, seed.LegacyName); err != nil {
+			if err := p.ensureBuiltInRoleTarget(ctx, seed, parentID); err != nil {
 				return "", err
 			}
+			if err := p.migrateBuiltInRoleID(ctx, existingID, seed.ID); err != nil {
+				return "", err
+			}
+			if err := p.upsertBuiltInRole(ctx, seed, parentID); err != nil {
+				return "", err
+			}
+			return seed.ID, nil
 		}
-		return existingID, nil
+		if err := p.upsertBuiltInRole(ctx, seed, parentID); err != nil {
+			return "", err
+		}
+		return seed.ID, nil
 	}
 	if err != nil && err != sql.ErrNoRows {
 		return "", err
 	}
+	if err := p.upsertBuiltInRole(ctx, seed, parentID); err != nil {
+		return "", err
+	}
+	return seed.ID, nil
+}
+
+func (p *RolePlugin) upsertBuiltInRole(ctx context.Context, seed builtInRoleSeed, parentID sql.NullString) error {
 	if _, err := p.db.ExecContext(ctx, `
 		INSERT INTO role_roles (id, name, parent_id, status, description)
 		VALUES ($1, $2, $3, $4, $5)
@@ -152,9 +156,129 @@ func (p *RolePlugin) ensureBuiltInRole(ctx context.Context, seed builtInRoleSeed
 			description=EXCLUDED.description,
 			deleted_at=NULL,
 			updated_at=now()`, seed.ID, seed.Name, parentID, seed.Status, seed.Description); err != nil {
-		return "", err
+		return err
 	}
-	return seed.ID, nil
+	return nil
+}
+
+func (p *RolePlugin) ensureBuiltInRoleTarget(ctx context.Context, seed builtInRoleSeed, parentID sql.NullString) error {
+	if _, err := p.db.ExecContext(ctx, `
+		INSERT INTO role_roles (id, name, parent_id, status, description)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (id) DO UPDATE
+		SET parent_id=EXCLUDED.parent_id,
+			status=EXCLUDED.status,
+			description=EXCLUDED.description,
+			deleted_at=NULL,
+			updated_at=now()`, seed.ID, builtInRoleMigrationName(seed.ID), parentID, seed.Status, seed.Description); err != nil {
+		return err
+	}
+	return nil
+}
+
+func builtInRoleMigrationName(roleID string) string {
+	return "__omps_builtin_role_migrating__" + roleID
+}
+
+func (p *RolePlugin) migrateBuiltInRoleID(ctx context.Context, fromID string, toID string) error {
+	if fromID == "" || fromID == toID {
+		return nil
+	}
+	tx, err := p.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
+
+	if err := copyRolePermissions(ctx, tx, fromID, toID); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM role_role_permissions
+		WHERE role_id=$1`, fromID); err != nil {
+		return err
+	}
+	if exists, err := tableExists(ctx, tx, "account_role_bindings"); err != nil {
+		return err
+	} else if exists {
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE account_role_bindings
+			SET role_id=$2
+			WHERE role_id=$1`, fromID, toID); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE role_roles
+		SET parent_id=$2,
+			updated_at=now()
+		WHERE parent_id=$1`, fromID, toID); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM role_roles
+		WHERE id=$1`, fromID); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	committed = true
+	return nil
+}
+
+func copyRolePermissions(ctx context.Context, tx *sql.Tx, fromID string, toID string) error {
+	columnType, err := tableColumnDataType(ctx, tx, "role_role_permissions", "id")
+	if err != nil {
+		return err
+	}
+	if columnType == "uuid" {
+		_, err = tx.ExecContext(ctx, `
+			INSERT INTO role_role_permissions (role_id, permission_id, created_at)
+			SELECT $2, permission_id, MIN(created_at)
+			FROM role_role_permissions
+			WHERE role_id=$1
+			GROUP BY permission_id
+			ON CONFLICT (role_id, permission_id) DO NOTHING`, fromID, toID)
+		return err
+	}
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO role_role_permissions (id, role_id, permission_id, created_at)
+		SELECT gen_random_uuid()::text, $2, permission_id, MIN(created_at)
+		FROM role_role_permissions
+		WHERE role_id=$1
+		GROUP BY permission_id
+		ON CONFLICT (role_id, permission_id) DO NOTHING`, fromID, toID)
+	return err
+}
+
+func tableExists(ctx context.Context, q queryRower, tableName string) (bool, error) {
+	var exists bool
+	err := q.QueryRowContext(ctx, `SELECT to_regclass($1) IS NOT NULL`, "public."+tableName).Scan(&exists)
+	return exists, err
+}
+
+func tableColumnDataType(ctx context.Context, q queryRower, tableName string, columnName string) (string, error) {
+	var dataType string
+	err := q.QueryRowContext(ctx, `
+		SELECT data_type
+		FROM information_schema.columns
+		WHERE table_schema='public'
+			AND table_name=$1
+			AND column_name=$2`, tableName, columnName).Scan(&dataType)
+	if err != nil {
+		return "", fmt.Errorf("inspect %s.%s data type: %w", tableName, columnName, err)
+	}
+	return dataType, nil
+}
+
+type queryRower interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
 }
 
 func (p *RolePlugin) builtInParentID(ctx context.Context, parentName string) (sql.NullString, error) {
