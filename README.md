@@ -20,7 +20,7 @@
 | GET | /api/role/permission-list | 分页查询权限点 | public |
 | PUT | /api/role/assign-permissions | 覆盖分配角色权限点 | public |
 | POST | /api/role/check-permission | 检查角色是否拥有权限点；`system.manage` 视为全权限 | public |
-| POST | /{admin_prefix}/api/role/admin/ping | 管理后台探活 | api_key |
+| POST | /api/role/admin/ping | 管理后台探活 | api_key |
 | POST | /_internal/method-call/role | Runtime 内部方法调用入口 | api_key |
 | POST | /_internal/scheduled-trigger/role | Runtime 内部手动触发定时任务 | api_key |
 | POST | /_internal/selftest/role | 已废弃的内部自测入口 | api_key |

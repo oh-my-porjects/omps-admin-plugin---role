@@ -1598,8 +1598,8 @@
     },
     {
       "method": "POST",
-      "path": "/{admin_prefix}/api/role/admin/ping",
-      "endpoint_key": "POST /{admin_prefix}/api/role/admin/ping",
+      "path": "/api/role/admin/ping",
+      "endpoint_key": "POST /api/role/admin/ping",
       "title": "管理后台探活",
       "description": "管理后台专用探活接口，返回 pong。",
       "auth": "api_key",
