@@ -8,95 +8,1807 @@
     {
       "method": "GET",
       "path": "/api/role/hello",
-      "title": "模块探活"
+      "title": "模块探活",
+      "description": "返回 role 模块名称和当前版本。",
+      "auth": "public",
+      "params": [],
+      "response": {
+        "data_type": "object",
+        "description": "模块基础信息。",
+        "error_codes": [
+          {
+            "msg": "响应写入失败或运行时异常。",
+            "status": 500
+          }
+        ],
+        "fields": [
+          {
+            "description": "模块名称。",
+            "name": "module",
+            "type": "string"
+          },
+          {
+            "description": "模块版本。",
+            "name": "version",
+            "type": "string"
+          }
+        ]
+      },
+      "request_example": {},
+      "response_example": {
+        "data": {
+          "module": "role",
+          "version": "dev"
+        },
+        "msg": "ok",
+        "status": 0
+      }
     },
     {
       "method": "POST",
       "path": "/api/role/create",
-      "title": "创建角色"
+      "title": "创建角色",
+      "description": "创建角色，按当前后台账号上下文确定父角色，并可同时绑定权限点。",
+      "auth": "public",
+      "params": [
+        {
+          "constraint": "2-30 个字符。",
+          "description": "角色名称。",
+          "name": "name",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "constraint": "UUID；与 parent_role_id 同义，parent_role_id 优先。",
+          "description": "父角色 ID。",
+          "name": "parent_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "constraint": "UUID；非空时覆盖 parent_id。",
+          "description": "父角色 ID 兼容字段。",
+          "name": "parent_role_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "constraint": "最多 200 个字符。",
+          "description": "角色说明。",
+          "name": "description",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "constraint": "enabled 或 disabled。",
+          "description": "角色状态。",
+          "name": "status",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "constraint": "每项必须是 UUID，重复值会去重。",
+          "description": "初始绑定的权限点 ID 列表。",
+          "item_type": "string",
+          "name": "permission_ids",
+          "required": false,
+          "type": "array"
+        }
+      ],
+      "response": {
+        "data_type": "object",
+        "description": "新创建的角色信息。",
+        "error_codes": [
+          {
+            "msg": "请求体解析失败，或角色名称、状态、说明、父级角色 ID、权限 ID 列表参数不合法。",
+            "status": 4101
+          },
+          {
+            "msg": "角色名称已存在或创建角色失败。",
+            "status": 4102
+          },
+          {
+            "msg": "手动指定的父级角色不存在。",
+            "status": 4103
+          },
+          {
+            "msg": "手动指定的父级角色未启用。",
+            "status": 4104
+          },
+          {
+            "msg": "手动指定的父级角色不在当前账号可操作范围内。",
+            "status": 4105
+          },
+          {
+            "msg": "当前账号未绑定角色，且不是允许创建顶级角色的超级管理员。",
+            "status": 4106
+          },
+          {
+            "msg": "当前账号绑定角色不存在或未启用。",
+            "status": 4107
+          },
+          {
+            "msg": "绑定的权限不存在或超出父级角色权限范围。",
+            "status": 4108
+          },
+          {
+            "msg": "当前账号身份或角色绑定信息读取失败或缺失。",
+            "status": 4109
+          }
+        ],
+        "fields": [
+          {
+            "description": "角色 ID。",
+            "name": "role_id",
+            "type": "string"
+          },
+          {
+            "description": "角色名称。",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "description": "父角色 ID，顶级角色为空。",
+            "name": "parent_id",
+            "type": "string"
+          },
+          {
+            "description": "父角色 ID 兼容字段。",
+            "name": "parent_role_id",
+            "type": "string"
+          },
+          {
+            "description": "父角色名称，创建响应中为空。",
+            "name": "parent_name",
+            "type": "string"
+          },
+          {
+            "description": "角色状态。",
+            "name": "status",
+            "type": "string"
+          },
+          {
+            "description": "角色说明。",
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "description": "创建时间，RFC3339。",
+            "name": "created_at",
+            "type": "string"
+          },
+          {
+            "description": "更新时间，RFC3339。",
+            "name": "updated_at",
+            "type": "string"
+          },
+          {
+            "description": "权限对象列表，创建响应为空数组。",
+            "fields": [
+              {
+                "description": "权限点 ID。",
+                "name": "permission_id",
+                "type": "string"
+              },
+              {
+                "description": "权限点标识。",
+                "name": "code",
+                "type": "string"
+              },
+              {
+                "description": "权限点名称。",
+                "name": "name",
+                "type": "string"
+              },
+              {
+                "description": "权限点说明。",
+                "name": "description",
+                "type": "string"
+              },
+              {
+                "description": "创建时间，RFC3339。",
+                "name": "created_at",
+                "type": "string"
+              }
+            ],
+            "name": "permissions",
+            "type": "array"
+          },
+          {
+            "description": "本次绑定的权限点 ID 列表。",
+            "item_type": "string",
+            "name": "permission_ids",
+            "type": "array"
+          }
+        ]
+      },
+      "request_example": {
+        "description": "负责运营配置",
+        "name": "运营主管",
+        "parent_id": "00000000-0000-0000-0000-000000000001",
+        "permission_ids": [
+          "00000000-0000-0000-0000-000000000002"
+        ],
+        "status": "enabled"
+      },
+      "response_example": {
+        "data": {
+          "created_at": "2026-05-20T04:00:00Z",
+          "description": "负责运营配置",
+          "name": "运营主管",
+          "parent_id": "00000000-0000-0000-0000-000000000001",
+          "parent_name": "",
+          "parent_role_id": "00000000-0000-0000-0000-000000000001",
+          "permission_ids": [
+            "00000000-0000-0000-0000-000000000002"
+          ],
+          "permissions": [],
+          "role_id": "00000000-0000-4000-8000-000000000101",
+          "status": "enabled",
+          "updated_at": "2026-05-20T04:00:00Z"
+        },
+        "msg": "",
+        "status": 0
+      }
     },
     {
       "method": "GET",
       "path": "/api/role/list",
-      "title": "角色列表"
+      "title": "角色列表",
+      "description": "按分页、状态、父角色和关键词查询角色列表。",
+      "auth": "public",
+      "params": [
+        {
+          "constraint": "\u003e= 1。",
+          "description": "页码。",
+          "name": "page",
+          "required": true,
+          "type": "integer"
+        },
+        {
+          "constraint": "1-100。",
+          "description": "每页数量。",
+          "name": "page_size",
+          "required": true,
+          "type": "integer"
+        },
+        {
+          "constraint": "enabled 或 disabled。",
+          "description": "角色状态过滤。",
+          "name": "status",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "constraint": "为空表示筛选顶级角色；非空必须为 UUID。",
+          "description": "父角色过滤；只要传入该参数就启用父级过滤。",
+          "name": "parent_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "constraint": "最多 30 个字符。",
+          "description": "按角色名称模糊查询。",
+          "name": "keyword",
+          "required": false,
+          "type": "string"
+        }
+      ],
+      "response": {
+        "data_type": "object",
+        "description": "分页角色列表。",
+        "error_codes": [
+          {
+            "msg": "分页参数不合法。",
+            "status": 2111
+          },
+          {
+            "msg": "状态参数不合法。",
+            "status": 2112
+          },
+          {
+            "msg": "父角色参数格式不合法。",
+            "status": 2113
+          },
+          {
+            "msg": "关键词过长或查询角色列表失败。",
+            "status": 2114
+          }
+        ],
+        "fields": [
+          {
+            "description": "角色列表。",
+            "fields": [
+              {
+                "description": "角色 ID。",
+                "name": "role_id",
+                "type": "string"
+              },
+              {
+                "description": "角色名称。",
+                "name": "name",
+                "type": "string"
+              },
+              {
+                "description": "父角色 ID，顶级角色为空。",
+                "name": "parent_id",
+                "type": "string"
+              },
+              {
+                "description": "父角色 ID 兼容字段。",
+                "name": "parent_role_id",
+                "type": "string"
+              },
+              {
+                "description": "父角色名称。",
+                "name": "parent_name",
+                "type": "string"
+              },
+              {
+                "description": "角色状态。",
+                "name": "status",
+                "type": "string"
+              },
+              {
+                "description": "角色说明。",
+                "name": "description",
+                "type": "string"
+              },
+              {
+                "description": "创建时间，RFC3339。",
+                "name": "created_at",
+                "type": "string"
+              },
+              {
+                "description": "更新时间，列表查询中可能为空。",
+                "name": "updated_at",
+                "type": "string"
+              },
+              {
+                "description": "列表查询不展开权限，固定为空数组。",
+                "fields": [
+                  {
+                    "description": "权限点 ID。",
+                    "name": "permission_id",
+                    "type": "string"
+                  },
+                  {
+                    "description": "权限点标识。",
+                    "name": "code",
+                    "type": "string"
+                  },
+                  {
+                    "description": "权限点名称。",
+                    "name": "name",
+                    "type": "string"
+                  },
+                  {
+                    "description": "权限点说明。",
+                    "name": "description",
+                    "type": "string"
+                  },
+                  {
+                    "description": "创建时间，RFC3339。",
+                    "name": "created_at",
+                    "type": "string"
+                  }
+                ],
+                "name": "permissions",
+                "type": "array"
+              },
+              {
+                "description": "列表查询通常不返回该字段。",
+                "item_type": "string",
+                "name": "permission_ids",
+                "type": "array"
+              }
+            ],
+            "name": "items",
+            "type": "array"
+          },
+          {
+            "description": "符合条件的总数。",
+            "name": "total",
+            "type": "integer"
+          }
+        ]
+      },
+      "request_example": {},
+      "response_example": {
+        "data": {
+          "items": [
+            {
+              "created_at": "2026-05-20T04:00:00Z",
+              "description": "系统预设角色，开发人员使用",
+              "name": "开发者",
+              "parent_id": "",
+              "parent_name": "",
+              "parent_role_id": "",
+              "permissions": [],
+              "role_id": "00000000-0000-0000-0000-000000000003",
+              "status": "enabled",
+              "updated_at": ""
+            }
+          ],
+          "total": 1
+        },
+        "msg": "",
+        "status": 0
+      }
     },
     {
       "method": "GET",
       "path": "/api/role/detail",
-      "title": "角色详情"
+      "title": "角色详情",
+      "description": "查询单个角色详情及其已绑定权限点。",
+      "auth": "public",
+      "params": [
+        {
+          "constraint": "UUID。",
+          "description": "角色 ID。",
+          "name": "role_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "response": {
+        "data_type": "object",
+        "description": "角色详情。",
+        "error_codes": [
+          {
+            "msg": "角色 ID 缺失或格式不合法。",
+            "status": 2121
+          },
+          {
+            "msg": "角色不存在。",
+            "status": 2122
+          },
+          {
+            "msg": "查询角色详情失败。",
+            "status": 2123
+          }
+        ],
+        "fields": [
+          {
+            "description": "角色 ID。",
+            "name": "role_id",
+            "type": "string"
+          },
+          {
+            "description": "角色名称。",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "description": "父角色 ID，顶级角色为空。",
+            "name": "parent_id",
+            "type": "string"
+          },
+          {
+            "description": "父角色 ID 兼容字段。",
+            "name": "parent_role_id",
+            "type": "string"
+          },
+          {
+            "description": "父角色名称。",
+            "name": "parent_name",
+            "type": "string"
+          },
+          {
+            "description": "角色状态。",
+            "name": "status",
+            "type": "string"
+          },
+          {
+            "description": "角色说明。",
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "description": "创建时间，RFC3339。",
+            "name": "created_at",
+            "type": "string"
+          },
+          {
+            "description": "更新时间，RFC3339。",
+            "name": "updated_at",
+            "type": "string"
+          },
+          {
+            "description": "已绑定权限点。",
+            "fields": [
+              {
+                "description": "权限点 ID。",
+                "name": "permission_id",
+                "type": "string"
+              },
+              {
+                "description": "权限点标识。",
+                "name": "code",
+                "type": "string"
+              },
+              {
+                "description": "权限点名称。",
+                "name": "name",
+                "type": "string"
+              },
+              {
+                "description": "权限点说明。",
+                "name": "description",
+                "type": "string"
+              },
+              {
+                "description": "创建时间，RFC3339。",
+                "name": "created_at",
+                "type": "string"
+              }
+            ],
+            "name": "permissions",
+            "type": "array"
+          },
+          {
+            "description": "详情查询通常不返回该字段。",
+            "item_type": "string",
+            "name": "permission_ids",
+            "type": "array"
+          }
+        ]
+      },
+      "request_example": {},
+      "response_example": {
+        "data": {
+          "created_at": "2026-05-20T04:00:00Z",
+          "description": "系统预设角色，拥有最高权限",
+          "name": "超级管理员",
+          "parent_id": "",
+          "parent_name": "",
+          "parent_role_id": "",
+          "permissions": [
+            {
+              "code": "system.manage",
+              "created_at": "2026-05-20T04:00:00Z",
+              "description": "root management permission",
+              "name": "System Manage",
+              "permission_id": "00000000-0000-0000-0000-000000000002"
+            }
+          ],
+          "role_id": "00000000-0000-0000-0000-000000000001",
+          "status": "enabled",
+          "updated_at": "2026-05-20T04:00:00Z"
+        },
+        "msg": "",
+        "status": 0
+      }
     },
     {
       "method": "PUT",
       "path": "/api/role/update",
-      "title": "更新角色"
+      "title": "更新角色",
+      "description": "更新角色名称、父级、说明和状态。",
+      "auth": "public",
+      "params": [
+        {
+          "constraint": "UUID。",
+          "description": "角色 ID。",
+          "name": "role_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "constraint": "2-30 个字符。",
+          "description": "角色名称。",
+          "name": "name",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "constraint": "为空表示顶级角色；非空必须为 UUID 且不能形成循环。",
+          "description": "父角色 ID。",
+          "name": "parent_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "constraint": "最多 200 个字符。",
+          "description": "角色说明。",
+          "name": "description",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "constraint": "enabled 或 disabled。",
+          "description": "角色状态。",
+          "name": "status",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "response": {
+        "data_type": "object",
+        "description": "更新后的角色信息。",
+        "error_codes": [
+          {
+            "msg": "请求体解析失败，或角色 ID 缺失/格式不合法。",
+            "status": 2131
+          },
+          {
+            "msg": "角色不存在。",
+            "status": 2132
+          },
+          {
+            "msg": "角色名称、状态或说明参数不合法。",
+            "status": 2133
+          },
+          {
+            "msg": "父角色不存在或父角色设置不合法。",
+            "status": 2134
+          },
+          {
+            "msg": "角色层级不允许形成循环。",
+            "status": 2135
+          },
+          {
+            "msg": "当前角色权限超出新父角色权限范围。",
+            "status": 2136
+          },
+          {
+            "msg": "同一父角色下角色名称已存在。",
+            "status": 2137
+          },
+          {
+            "msg": "更新角色失败。",
+            "status": 2138
+          }
+        ],
+        "fields": [
+          {
+            "description": "角色 ID。",
+            "name": "role_id",
+            "type": "string"
+          },
+          {
+            "description": "角色名称。",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "description": "父角色 ID，顶级角色为空。",
+            "name": "parent_id",
+            "type": "string"
+          },
+          {
+            "description": "父角色 ID 兼容字段。",
+            "name": "parent_role_id",
+            "type": "string"
+          },
+          {
+            "description": "父角色名称，更新响应中为空。",
+            "name": "parent_name",
+            "type": "string"
+          },
+          {
+            "description": "角色状态。",
+            "name": "status",
+            "type": "string"
+          },
+          {
+            "description": "角色说明。",
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "description": "创建时间，RFC3339。",
+            "name": "created_at",
+            "type": "string"
+          },
+          {
+            "description": "更新时间，RFC3339。",
+            "name": "updated_at",
+            "type": "string"
+          },
+          {
+            "description": "更新响应不展开权限，固定为空数组。",
+            "fields": [
+              {
+                "description": "权限点 ID。",
+                "name": "permission_id",
+                "type": "string"
+              },
+              {
+                "description": "权限点标识。",
+                "name": "code",
+                "type": "string"
+              },
+              {
+                "description": "权限点名称。",
+                "name": "name",
+                "type": "string"
+              },
+              {
+                "description": "权限点说明。",
+                "name": "description",
+                "type": "string"
+              },
+              {
+                "description": "创建时间，RFC3339。",
+                "name": "created_at",
+                "type": "string"
+              }
+            ],
+            "name": "permissions",
+            "type": "array"
+          },
+          {
+            "description": "更新响应通常不返回该字段。",
+            "item_type": "string",
+            "name": "permission_ids",
+            "type": "array"
+          }
+        ]
+      },
+      "request_example": {
+        "description": "负责客服处理",
+        "name": "客服支持",
+        "parent_id": "00000000-0000-0000-0000-000000000001",
+        "role_id": "00000000-0000-0000-0000-000000000003",
+        "status": "enabled"
+      },
+      "response_example": {
+        "data": {
+          "created_at": "2026-05-20T04:00:00Z",
+          "description": "负责客服处理",
+          "name": "客服支持",
+          "parent_id": "00000000-0000-0000-0000-000000000001",
+          "parent_name": "",
+          "parent_role_id": "00000000-0000-0000-0000-000000000001",
+          "permissions": [],
+          "role_id": "00000000-0000-0000-0000-000000000003",
+          "status": "enabled",
+          "updated_at": "2026-05-20T04:10:00Z"
+        },
+        "msg": "",
+        "status": 0
+      }
     },
     {
       "method": "POST",
       "path": "/api/role/enable",
-      "title": "启用角色"
+      "title": "启用角色",
+      "description": "将指定角色恢复为启用状态；启用前必须保证父级角色已启用且目标未删除。",
+      "auth": "public",
+      "params": [
+        {
+          "constraint": "UUID。",
+          "description": "要启用的角色 ID。",
+          "name": "role_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "response": {
+        "data_type": "object",
+        "description": "启用后的角色基本信息。",
+        "error_codes": [
+          {
+            "msg": "请求体解析失败或 role_id 参数非法。",
+            "status": 2341
+          },
+          {
+            "msg": "角色不存在或已删除。",
+            "status": 2342
+          },
+          {
+            "msg": "角色已处于启用状态。",
+            "status": 2343
+          },
+          {
+            "msg": "父级角色不存在、已删除或未启用。",
+            "status": 2344
+          },
+          {
+            "msg": "启用角色失败。",
+            "status": 2345
+          }
+        ],
+        "fields": [
+          {
+            "description": "角色 ID。",
+            "name": "role_id",
+            "type": "string"
+          },
+          {
+            "description": "角色名称。",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "description": "角色状态，固定为 enabled。",
+            "name": "status",
+            "type": "string"
+          },
+          {
+            "description": "更新时间，RFC3339。",
+            "name": "updated_at",
+            "type": "string"
+          }
+        ]
+      },
+      "request_example": {
+        "role_id": "00000000-0000-0000-0000-000000000012"
+      },
+      "response_example": {
+        "data": {
+          "name": "活动运营",
+          "role_id": "00000000-0000-0000-0000-000000000012",
+          "status": "enabled",
+          "updated_at": "2026-05-21T02:10:00Z"
+        },
+        "msg": "",
+        "status": 0
+      }
     },
     {
       "method": "POST",
       "path": "/api/role/disable",
-      "title": "禁用角色"
+      "title": "禁用角色",
+      "description": "将指定角色切换为禁用状态；禁用后该角色不再参与权限校验。",
+      "auth": "public",
+      "params": [
+        {
+          "constraint": "UUID。",
+          "description": "要禁用的角色 ID。",
+          "name": "role_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "response": {
+        "data_type": "object",
+        "description": "禁用后的角色基本信息。",
+        "error_codes": [
+          {
+            "msg": "请求体解析失败或 role_id 参数非法。",
+            "status": 2331
+          },
+          {
+            "msg": "角色不存在或已删除。",
+            "status": 2332
+          },
+          {
+            "msg": "根角色或系统内置角色不可禁用。",
+            "status": 2333
+          },
+          {
+            "msg": "角色已处于禁用状态。",
+            "status": 2334
+          },
+          {
+            "msg": "禁用角色失败。",
+            "status": 2335
+          }
+        ],
+        "fields": [
+          {
+            "description": "角色 ID。",
+            "name": "role_id",
+            "type": "string"
+          },
+          {
+            "description": "角色名称。",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "description": "角色状态，固定为 disabled。",
+            "name": "status",
+            "type": "string"
+          },
+          {
+            "description": "更新时间，RFC3339。",
+            "name": "updated_at",
+            "type": "string"
+          }
+        ]
+      },
+      "request_example": {
+        "role_id": "00000000-0000-0000-0000-000000000012"
+      },
+      "response_example": {
+        "data": {
+          "name": "活动运营",
+          "role_id": "00000000-0000-0000-0000-000000000012",
+          "status": "disabled",
+          "updated_at": "2026-05-21T02:05:00Z"
+        },
+        "msg": "",
+        "status": 0
+      }
     },
     {
       "method": "POST",
       "path": "/api/role/delete",
-      "title": "删除角色"
+      "title": "删除角色",
+      "description": "将目标角色及其全部未删除下级角色标记为已删除。",
+      "auth": "public",
+      "params": [
+        {
+          "constraint": "UUID。",
+          "description": "要删除的角色 ID。",
+          "name": "role_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "response": {
+        "data_type": "object",
+        "description": "本次删除影响的角色信息。",
+        "error_codes": [
+          {
+            "msg": "请求体解析失败或 role_id 参数非法。",
+            "status": 2321
+          },
+          {
+            "msg": "角色不存在或已删除。",
+            "status": 2322
+          },
+          {
+            "msg": "根角色或系统内置角色不可删除。",
+            "status": 2323
+          },
+          {
+            "msg": "删除角色或级联删除子角色失败。",
+            "status": 2324
+          }
+        ],
+        "fields": [
+          {
+            "description": "被删除的根角色 ID。",
+            "name": "role_id",
+            "type": "string"
+          },
+          {
+            "description": "本次被标记删除的角色总数。",
+            "name": "deleted_count",
+            "type": "number"
+          },
+          {
+            "description": "被标记删除的角色 ID 列表。",
+            "item_type": "string",
+            "name": "deleted_role_ids",
+            "type": "array"
+          },
+          {
+            "description": "删除时间，RFC3339。",
+            "name": "deleted_at",
+            "type": "string"
+          }
+        ]
+      },
+      "request_example": {
+        "role_id": "00000000-0000-0000-0000-000000000010"
+      },
+      "response_example": {
+        "data": {
+          "deleted_at": "2026-05-21T02:00:00Z",
+          "deleted_count": 3,
+          "deleted_role_ids": [
+            "00000000-0000-0000-0000-000000000010"
+          ],
+          "role_id": "00000000-0000-0000-0000-000000000010"
+        },
+        "msg": "",
+        "status": 0
+      }
     },
     {
       "method": "GET",
       "path": "/api/role/children-tree",
-      "title": "查子树"
+      "title": "查子树",
+      "description": "按角色 ID 拉取该角色下的完整未删除子角色树，用于删除前展示影响范围。",
+      "auth": "public",
+      "params": [
+        {
+          "constraint": "UUID。",
+          "description": "当前角色 ID。",
+          "name": "role_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "response": {
+        "data_type": "object",
+        "description": "当前角色及其完整未删除子角色树。",
+        "error_codes": [
+          {
+            "msg": "role_id 参数非法。",
+            "status": 2311
+          },
+          {
+            "msg": "角色不存在或已删除。",
+            "status": 2312
+          },
+          {
+            "msg": "查询子角色树失败。",
+            "status": 2313
+          }
+        ],
+        "fields": [
+          {
+            "description": "角色 ID。",
+            "name": "role_id",
+            "type": "string"
+          },
+          {
+            "description": "角色名称。",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "description": "父角色 ID。",
+            "name": "parent_id",
+            "type": "string"
+          },
+          {
+            "description": "父角色 ID 兼容字段。",
+            "name": "parent_role_id",
+            "type": "string"
+          },
+          {
+            "description": "父角色名称。",
+            "name": "parent_name",
+            "type": "string"
+          },
+          {
+            "description": "角色状态。",
+            "name": "status",
+            "type": "string"
+          },
+          {
+            "description": "角色说明。",
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "description": "是否存在下级角色。",
+            "name": "has_children",
+            "type": "boolean"
+          },
+          {
+            "description": "直接下级角色数量。",
+            "name": "children_count",
+            "type": "number"
+          },
+          {
+            "description": "递归子角色列表。",
+            "fields": [
+              {
+                "description": "子角色 ID。",
+                "name": "role_id",
+                "type": "string"
+              },
+              {
+                "description": "子角色名称。",
+                "name": "name",
+                "type": "string"
+              },
+              {
+                "description": "父角色 ID。",
+                "name": "parent_id",
+                "type": "string"
+              },
+              {
+                "description": "父角色 ID 兼容字段。",
+                "name": "parent_role_id",
+                "type": "string"
+              },
+              {
+                "description": "父角色名称。",
+                "name": "parent_name",
+                "type": "string"
+              },
+              {
+                "description": "子角色状态。",
+                "name": "status",
+                "type": "string"
+              },
+              {
+                "description": "子角色说明。",
+                "name": "description",
+                "type": "string"
+              },
+              {
+                "description": "是否存在下级角色。",
+                "name": "has_children",
+                "type": "boolean"
+              },
+              {
+                "description": "直接下级角色数量。",
+                "name": "children_count",
+                "type": "number"
+              },
+              {
+                "description": "更深层递归子角色列表；结构与当前节点相同。",
+                "fields": [],
+                "name": "children",
+                "type": "array"
+              }
+            ],
+            "name": "children",
+            "type": "array"
+          }
+        ]
+      },
+      "request_example": {
+        "role_id": "00000000-0000-0000-0000-000000000010"
+      },
+      "response_example": {
+        "data": {
+          "children": [
+            {
+              "children": [],
+              "children_count": 0,
+              "description": "活动配置执行",
+              "has_children": false,
+              "name": "活动运营",
+              "parent_id": "00000000-0000-0000-0000-000000000010",
+              "parent_name": "运营中心",
+              "parent_role_id": "00000000-0000-0000-0000-000000000010",
+              "role_id": "00000000-0000-0000-0000-000000000011",
+              "status": "enabled"
+            }
+          ],
+          "children_count": 1,
+          "description": "运营团队根角色",
+          "has_children": true,
+          "name": "运营中心",
+          "parent_id": "00000000-0000-0000-0000-000000000001",
+          "parent_name": "超级管理员",
+          "parent_role_id": "00000000-0000-0000-0000-000000000001",
+          "role_id": "00000000-0000-0000-0000-000000000010",
+          "status": "enabled"
+        },
+        "msg": "",
+        "status": 0
+      }
     },
     {
       "method": "POST",
       "path": "/api/role/permission-create",
-      "title": "创建权限点"
+      "title": "创建权限点",
+      "description": "创建可绑定到角色的权限点。",
+      "auth": "public",
+      "params": [
+        {
+          "constraint": "3-80 个字符，仅允许小写字母、数字、点、下划线、短横线。",
+          "description": "权限点标识。",
+          "name": "code",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "constraint": "2-30 个字符。",
+          "description": "权限点名称。",
+          "name": "name",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "constraint": "最多 200 个字符。",
+          "description": "权限点说明。",
+          "name": "description",
+          "required": false,
+          "type": "string"
+        }
+      ],
+      "response": {
+        "data_type": "object",
+        "description": "新创建的权限点。",
+        "error_codes": [
+          {
+            "msg": "请求体解析失败，或权限点标识缺失/格式不合法。",
+            "status": 2141
+          },
+          {
+            "msg": "权限点名称缺失/长度不合法，或权限点说明过长。",
+            "status": 2142
+          },
+          {
+            "msg": "权限点标识已存在。",
+            "status": 2143
+          },
+          {
+            "msg": "创建权限点失败。",
+            "status": 2144
+          }
+        ],
+        "fields": [
+          {
+            "description": "权限点 ID。",
+            "name": "permission_id",
+            "type": "string"
+          },
+          {
+            "description": "权限点标识。",
+            "name": "code",
+            "type": "string"
+          },
+          {
+            "description": "权限点名称。",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "description": "权限点说明。",
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "description": "创建时间，RFC3339。",
+            "name": "created_at",
+            "type": "string"
+          }
+        ]
+      },
+      "request_example": {
+        "code": "order.read",
+        "description": "允许查看订单列表和详情",
+        "name": "查看订单"
+      },
+      "response_example": {
+        "data": {
+          "code": "order.read",
+          "created_at": "2026-05-20T04:00:00Z",
+          "description": "允许查看订单列表和详情",
+          "name": "查看订单",
+          "permission_id": "00000000-0000-4000-8000-000000000201"
+        },
+        "msg": "",
+        "status": 0
+      }
     },
     {
       "method": "GET",
       "path": "/api/role/permission-list",
-      "title": "权限点列表"
+      "title": "权限点列表",
+      "description": "分页查询权限点，可按标识或名称关键词过滤。",
+      "auth": "public",
+      "params": [
+        {
+          "constraint": "\u003e= 1。",
+          "description": "页码。",
+          "name": "page",
+          "required": true,
+          "type": "integer"
+        },
+        {
+          "constraint": "1-100。",
+          "description": "每页数量。",
+          "name": "page_size",
+          "required": true,
+          "type": "integer"
+        },
+        {
+          "constraint": "最多 80 个字符。",
+          "description": "按权限点标识或名称模糊查询。",
+          "name": "keyword",
+          "required": false,
+          "type": "string"
+        }
+      ],
+      "response": {
+        "data_type": "object",
+        "description": "分页权限点列表。",
+        "error_codes": [
+          {
+            "msg": "分页参数不合法。",
+            "status": 2151
+          },
+          {
+            "msg": "关键词参数过长。",
+            "status": 2152
+          },
+          {
+            "msg": "查询权限点列表失败。",
+            "status": 2153
+          }
+        ],
+        "fields": [
+          {
+            "description": "权限点列表。",
+            "fields": [
+              {
+                "description": "权限点 ID。",
+                "name": "permission_id",
+                "type": "string"
+              },
+              {
+                "description": "权限点标识。",
+                "name": "code",
+                "type": "string"
+              },
+              {
+                "description": "权限点名称。",
+                "name": "name",
+                "type": "string"
+              },
+              {
+                "description": "权限点说明。",
+                "name": "description",
+                "type": "string"
+              },
+              {
+                "description": "创建时间，RFC3339。",
+                "name": "created_at",
+                "type": "string"
+              }
+            ],
+            "name": "items",
+            "type": "array"
+          },
+          {
+            "description": "符合条件的总数。",
+            "name": "total",
+            "type": "integer"
+          }
+        ]
+      },
+      "request_example": {},
+      "response_example": {
+        "data": {
+          "items": [
+            {
+              "code": "system.manage",
+              "created_at": "2026-05-20T04:00:00Z",
+              "description": "root management permission",
+              "name": "System Manage",
+              "permission_id": "00000000-0000-0000-0000-000000000002"
+            }
+          ],
+          "total": 1
+        },
+        "msg": "",
+        "status": 0
+      }
     },
     {
       "method": "PUT",
       "path": "/api/role/assign-permissions",
-      "title": "分配角色权限"
+      "title": "分配角色权限",
+      "description": "覆盖角色已绑定权限点，并校验账号操作范围、父级权限边界和子角色权限边界。",
+      "auth": "public",
+      "params": [
+        {
+          "constraint": "UUID。",
+          "description": "角色 ID。",
+          "name": "role_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "constraint": "每项必须是 UUID，重复值会去重；可传空数组清空权限。",
+          "description": "新的权限点 ID 列表。",
+          "item_type": "string",
+          "name": "permission_ids",
+          "required": true,
+          "type": "array"
+        }
+      ],
+      "response": {
+        "data_type": "object",
+        "description": "分配后的角色权限摘要。",
+        "error_codes": [
+          {
+            "msg": "请求体解析失败，或角色 ID/权限点 ID 列表格式不合法。",
+            "status": 4201
+          },
+          {
+            "msg": "角色不存在。",
+            "status": 4202
+          },
+          {
+            "msg": "角色状态不允许分配权限，无法读取当前后台账号身份，或角色不在当前账号可操作范围内。",
+            "status": 4203
+          },
+          {
+            "msg": "权限不存在或超出父角色权限范围。",
+            "status": 4204
+          },
+          {
+            "msg": "分配权限失败，或清理权限会导致子角色越权。",
+            "status": 4205
+          }
+        ],
+        "fields": [
+          {
+            "description": "角色 ID。",
+            "name": "role_id",
+            "type": "string"
+          },
+          {
+            "description": "分配后的权限点 ID 列表。",
+            "item_type": "string",
+            "name": "permission_ids",
+            "type": "array"
+          },
+          {
+            "description": "角色更新时间，RFC3339。",
+            "name": "updated_at",
+            "type": "string"
+          }
+        ]
+      },
+      "request_example": {
+        "permission_ids": [
+          "00000000-0000-0000-0000-000000000002"
+        ],
+        "role_id": "00000000-0000-0000-0000-000000000003"
+      },
+      "response_example": {
+        "data": {
+          "permission_ids": [
+            "00000000-0000-0000-0000-000000000002"
+          ],
+          "role_id": "00000000-0000-0000-0000-000000000003",
+          "updated_at": "2026-05-20T04:15:00Z"
+        },
+        "msg": "",
+        "status": 0
+      }
     },
     {
       "method": "POST",
       "path": "/api/role/check-permission",
-      "title": "检查权限"
+      "title": "检查权限",
+      "description": "检查指定角色是否启用且拥有指定权限点；角色拥有 system.manage 时视为全权限。",
+      "auth": "public",
+      "params": [
+        {
+          "constraint": "UUID。",
+          "description": "角色 ID。",
+          "name": "role_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "constraint": "3-80 个字符，仅允许小写字母、数字、点、下划线、短横线。",
+          "description": "权限点标识。",
+          "name": "permission_code",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "response": {
+        "data_type": "object",
+        "description": "权限检查结果。",
+        "error_codes": [
+          {
+            "msg": "请求体解析失败，或角色 ID 缺失/格式不合法。",
+            "status": 2171
+          },
+          {
+            "msg": "权限点标识缺失或格式不合法。",
+            "status": 2172
+          },
+          {
+            "msg": "角色不存在。",
+            "status": 2173
+          },
+          {
+            "msg": "权限点不存在。",
+            "status": 2174
+          },
+          {
+            "msg": "权限校验失败。",
+            "status": 2175
+          }
+        ],
+        "fields": [
+          {
+            "description": "角色启用且直接拥有权限点，或拥有 system.manage 全权限时为 true。",
+            "name": "allowed",
+            "type": "boolean"
+          },
+          {
+            "description": "角色当前状态。",
+            "name": "role_status",
+            "type": "string"
+          }
+        ]
+      },
+      "request_example": {
+        "permission_code": "system.manage",
+        "role_id": "00000000-0000-0000-0000-000000000001"
+      },
+      "response_example": {
+        "data": {
+          "allowed": true,
+          "role_status": "enabled"
+        },
+        "msg": "",
+        "status": 0
+      }
     },
     {
       "method": "POST",
       "path": "/_internal/method-call/role",
-      "title": "内部方法调用"
+      "title": "内部方法调用",
+      "description": "Runtime 内部方法调用入口，根据 method 查找 Methods 表并传入动态 args。",
+      "auth": "api_key",
+      "params": [
+        {
+          "constraint": "不能为空，且必须已注册到 Methods。",
+          "description": "内部方法名。",
+          "name": "method",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "constraint": "动态 JSON 对象，具体结构由被调用方法决定。",
+          "description": "内部方法参数。",
+          "fields": [],
+          "name": "args",
+          "required": false,
+          "type": "object"
+        }
+      ],
+      "response": {
+        "data_type": "object",
+        "description": "内部方法返回值，结构由被调用方法决定。",
+        "error_codes": [
+          {
+            "msg": "X-Internal-Token 缺失或与 RUNTIME_INTERNAL_TOKEN 不匹配。",
+            "status": 401
+          },
+          {
+            "msg": "请求体解析失败、method 为空、方法未注册、方法返回错误或方法 panic。",
+            "status": 1
+          }
+        ],
+        "fields": []
+      },
+      "request_example": {
+        "args": {
+          "id": "00000000-0000-0000-0000-000000000001"
+        },
+        "method": "ExampleMethod"
+      },
+      "response_example": {
+        "data": {
+          "ok": true
+        },
+        "msg": "",
+        "status": 0
+      }
     },
     {
       "method": "POST",
       "path": "/_internal/scheduled-trigger/role",
-      "title": "内部触发定时任务"
+      "title": "内部触发定时任务",
+      "description": "Runtime 内部手动触发已注册定时任务，并以 SSE 返回执行日志。",
+      "auth": "api_key",
+      "params": [
+        {
+          "constraint": "不能为空，且必须已注册到 ScheduledTasks。",
+          "description": "定时任务名称。",
+          "name": "task_name",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "response": {
+        "data_type": "null",
+        "description": "SSE 文本流，每条事件为一行执行日志。",
+        "error_codes": [
+          {
+            "msg": "X-Internal-Token 缺失或与 RUNTIME_INTERNAL_TOKEN 不匹配。",
+            "status": 401
+          },
+          {
+            "msg": "请求体解析失败或 task_name 为空。",
+            "status": 400
+          },
+          {
+            "msg": "未注册的定时任务。",
+            "status": 404
+          }
+        ],
+        "fields": []
+      },
+      "request_example": {
+        "task_name": "cleanup_expired_sessions"
+      },
+      "response_example": {
+        "data": "data: [2026-05-20T04:00:00Z] 任务 cleanup_expired_sessions 开始执行\\n\\ndata: [2026-05-20T04:00:01Z] 任务完成（耗时 1s）\\n\\n",
+        "msg": "",
+        "status": 0
+      }
     },
     {
       "method": "POST",
       "path": "/_internal/selftest/role",
-      "title": "废弃自测入口"
+      "title": "废弃自测入口",
+      "description": "已废弃的内部自测端点，仅返回迁移提示；流水线改为直接读取 tests/*.test.json。",
+      "auth": "api_key",
+      "params": [],
+      "response": {
+        "data_type": "null",
+        "description": "废弃提示，无数据体。",
+        "error_codes": [
+          {
+            "msg": "X-Internal-Token 缺失或与 RUNTIME_INTERNAL_TOKEN 不匹配。",
+            "status": 401
+          },
+          {
+            "msg": "端点已废弃，调用方应改用 admin-server 直接执行 tests/*.test.json。",
+            "status": 1
+          }
+        ],
+        "fields": []
+      },
+      "request_example": {},
+      "response_example": {
+        "data": null,
+        "msg": "selftest 端点已废弃；流水线 API 自动测试改由 admin-server 直接读 tests/*.test.json 执行（见 scheduler_apitest_executor.go）。开发者本机自测单接口请直接 curl runtime 8080 业务端口并带上 X-API-Key / X-User-ID。",
+        "status": 1
+      }
     }
   ],
   "admin_apis": [
     {
       "method": "POST",
       "path": "/api/role/admin/ping",
-      "title": "管理后台探活"
+      "title": "管理后台探活",
+      "description": "管理后台专用探活接口，返回 pong。",
+      "auth": "api_key",
+      "params": [],
+      "response": {
+        "data_type": "null",
+        "description": "探活响应，无数据体。",
+        "error_codes": [
+          {
+            "msg": "管理后台 API Key 缺失或无效。",
+            "status": 401
+          }
+        ],
+        "fields": []
+      },
+      "request_example": {},
+      "response_example": {
+        "data": null,
+        "msg": "pong",
+        "status": 0
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/_internal/method-call/role",
+      "title": "内部方法调用",
+      "description": "Runtime 内部方法调用入口，根据 method 查找 Methods 表并传入动态 args。",
+      "auth": "api_key",
+      "params": [
+        {
+          "constraint": "不能为空，且必须已注册到 Methods。",
+          "description": "内部方法名。",
+          "name": "method",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "constraint": "动态 JSON 对象，具体结构由被调用方法决定。",
+          "description": "内部方法参数。",
+          "fields": [],
+          "name": "args",
+          "required": false,
+          "type": "object"
+        }
+      ],
+      "response": {
+        "data_type": "object",
+        "description": "内部方法返回值，结构由被调用方法决定。",
+        "error_codes": [
+          {
+            "msg": "X-Internal-Token 缺失或与 RUNTIME_INTERNAL_TOKEN 不匹配。",
+            "status": 401
+          },
+          {
+            "msg": "请求体解析失败、method 为空、方法未注册、方法返回错误或方法 panic。",
+            "status": 1
+          }
+        ],
+        "fields": []
+      },
+      "request_example": {
+        "args": {
+          "id": "00000000-0000-0000-0000-000000000001"
+        },
+        "method": "ExampleMethod"
+      },
+      "response_example": {
+        "data": {
+          "ok": true
+        },
+        "msg": "",
+        "status": 0
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/_internal/scheduled-trigger/role",
+      "title": "内部触发定时任务",
+      "description": "Runtime 内部手动触发已注册定时任务，并以 SSE 返回执行日志。",
+      "auth": "api_key",
+      "params": [
+        {
+          "constraint": "不能为空，且必须已注册到 ScheduledTasks。",
+          "description": "定时任务名称。",
+          "name": "task_name",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "response": {
+        "data_type": "null",
+        "description": "SSE 文本流，每条事件为一行执行日志。",
+        "error_codes": [
+          {
+            "msg": "X-Internal-Token 缺失或与 RUNTIME_INTERNAL_TOKEN 不匹配。",
+            "status": 401
+          },
+          {
+            "msg": "请求体解析失败或 task_name 为空。",
+            "status": 400
+          },
+          {
+            "msg": "未注册的定时任务。",
+            "status": 404
+          }
+        ],
+        "fields": []
+      },
+      "request_example": {
+        "task_name": "cleanup_expired_sessions"
+      },
+      "response_example": {
+        "data": "data: [2026-05-20T04:00:00Z] 任务 cleanup_expired_sessions 开始执行\\n\\ndata: [2026-05-20T04:00:01Z] 任务完成（耗时 1s）\\n\\n",
+        "msg": "",
+        "status": 0
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/_internal/selftest/role",
+      "title": "废弃自测入口",
+      "description": "已废弃的内部自测端点，仅返回迁移提示；流水线改为直接读取 tests/*.test.json。",
+      "auth": "api_key",
+      "params": [],
+      "response": {
+        "data_type": "null",
+        "description": "废弃提示，无数据体。",
+        "error_codes": [
+          {
+            "msg": "X-Internal-Token 缺失或与 RUNTIME_INTERNAL_TOKEN 不匹配。",
+            "status": 401
+          },
+          {
+            "msg": "端点已废弃，调用方应改用 admin-server 直接执行 tests/*.test.json。",
+            "status": 1
+          }
+        ],
+        "fields": []
+      },
+      "request_example": {},
+      "response_example": {
+        "data": null,
+        "msg": "selftest 端点已废弃；流水线 API 自动测试改由 admin-server 直接读 tests/*.test.json 执行（见 scheduler_apitest_executor.go）。开发者本机自测单接口请直接 curl runtime 8080 业务端口并带上 X-API-Key / X-User-ID。",
+        "status": 1
+      }
     }
   ],
   "dependencies": [
     "account"
   ],
   "configs": [],
+  "capabilities": {},
   "entry_files": [
     "main.go"
   ],
@@ -118,10 +1830,12 @@
     "allows_new_work_while_unloading": false
   },
   "related_requirements": [
+    14,
     13
   ],
-  "last_generated_at": "2026-05-20T04:23:07Z",
+  "last_generated_at": "2026-06-05T08:49:59Z",
   "warnings": [
+    "已合并 API 接口表中的 3 条接口",
     "缺少 schema.json，表 ownership 未能确定"
   ]
 }
