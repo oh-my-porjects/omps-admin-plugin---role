@@ -39,7 +39,15 @@
           "version": "dev"
         },
         "msg": "ok"
-      }
+      },
+      "rules": [
+        {
+          "category": "business",
+          "title": "模块探活 返回当前事实",
+          "body": "该查询接口必须按照当前代码和数据表返回稳定字段结构；分页、筛选、排序和空结果语义必须与 api-docs.json 保持一致。接口职责：返回 role 模块名称和当前版本。",
+          "code_loc": "main.go:128"
+        }
+      ]
     },
     {
       "method": "POST",
@@ -82,7 +90,11 @@
           "type": "string",
           "required": true,
           "constraint": "enabled 或 disabled。",
-          "description": "角色状态。"
+          "description": "角色状态。",
+          "enum": {
+            "enabled": "启用",
+            "disabled": "停用"
+          }
         },
         {
           "name": "permission_ids",
@@ -134,7 +146,11 @@
           {
             "name": "status",
             "type": "string",
-            "description": "角色状态。"
+            "description": "角色状态。",
+            "enum": {
+              "enabled": "启用",
+              "disabled": "停用"
+            }
           },
           {
             "name": "description",
@@ -290,7 +306,11 @@
           "type": "string",
           "required": false,
           "constraint": "enabled 或 disabled。",
-          "description": "角色状态过滤。"
+          "description": "角色状态过滤。",
+          "enum": {
+            "enabled": "启用",
+            "disabled": "停用"
+          }
         },
         {
           "name": "parent_id",
@@ -344,7 +364,11 @@
               {
                 "name": "status",
                 "type": "string",
-                "description": "角色状态。"
+                "description": "角色状态。",
+                "enum": {
+                  "enabled": "启用",
+                  "disabled": "停用"
+                }
               },
               {
                 "name": "description",
@@ -446,7 +470,15 @@
           "total": 1
         },
         "msg": ""
-      }
+      },
+      "rules": [
+        {
+          "category": "business",
+          "title": "角色列表 返回当前事实",
+          "body": "该查询接口必须按照当前代码和数据表返回稳定字段结构；分页、筛选、排序和空结果语义必须与 api-docs.json 保持一致。接口职责：按分页、状态、父角色和关键词查询角色列表。",
+          "code_loc": "main.go:130"
+        }
+      ]
     },
     {
       "method": "GET",
@@ -496,7 +528,11 @@
           {
             "name": "status",
             "type": "string",
-            "description": "角色状态。"
+            "description": "角色状态。",
+            "enum": {
+              "enabled": "启用",
+              "disabled": "停用"
+            }
           },
           {
             "name": "description",
@@ -590,7 +626,15 @@
           ]
         },
         "msg": ""
-      }
+      },
+      "rules": [
+        {
+          "category": "business",
+          "title": "角色详情 返回当前事实",
+          "body": "该查询接口必须按照当前代码和数据表返回稳定字段结构；分页、筛选、排序和空结果语义必须与 api-docs.json 保持一致。接口职责：查询单个角色详情及其已绑定权限点。",
+          "code_loc": "main.go:131"
+        }
+      ]
     },
     {
       "method": "PUT",
@@ -633,7 +677,11 @@
           "type": "string",
           "required": true,
           "constraint": "enabled 或 disabled。",
-          "description": "角色状态。"
+          "description": "角色状态。",
+          "enum": {
+            "enabled": "启用",
+            "disabled": "停用"
+          }
         }
       ],
       "request_example": {
@@ -675,7 +723,11 @@
           {
             "name": "status",
             "type": "string",
-            "description": "角色状态。"
+            "description": "角色状态。",
+            "enum": {
+              "enabled": "启用",
+              "disabled": "停用"
+            }
           },
           {
             "name": "description",
@@ -827,7 +879,11 @@
           {
             "name": "status",
             "type": "string",
-            "description": "角色状态，固定为 enabled。"
+            "description": "角色状态，固定为 enabled。",
+            "enum": {
+              "enabled": "启用",
+              "disabled": "停用"
+            }
           },
           {
             "name": "updated_at",
@@ -913,7 +969,11 @@
           {
             "name": "status",
             "type": "string",
-            "description": "角色状态，固定为 disabled。"
+            "description": "角色状态，固定为 disabled。",
+            "enum": {
+              "enabled": "启用",
+              "disabled": "停用"
+            }
           },
           {
             "name": "updated_at",
@@ -1099,7 +1159,11 @@
           {
             "name": "status",
             "type": "string",
-            "description": "角色状态。"
+            "description": "角色状态。",
+            "enum": {
+              "enabled": "启用",
+              "disabled": "停用"
+            }
           },
           {
             "name": "description",
@@ -1149,7 +1213,11 @@
               {
                 "name": "status",
                 "type": "string",
-                "description": "子角色状态。"
+                "description": "子角色状态。",
+                "enum": {
+                  "enabled": "启用",
+                  "disabled": "停用"
+                }
               },
               {
                 "name": "description",
@@ -1322,7 +1390,15 @@
           "created_at": "2026-05-20T04:00:00Z"
         },
         "msg": ""
-      }
+      },
+      "rules": [
+        {
+          "category": "constraint",
+          "title": "创建权限点 参数与状态校验",
+          "body": "该写入接口必须先校验必填参数、业务状态和数据存在性；校验失败时返回业务错误且不能产生不一致副作用。接口职责：创建可绑定到角色的权限点。",
+          "code_loc": "main.go:137"
+        }
+      ]
     },
     {
       "method": "GET",
@@ -1426,7 +1502,15 @@
           "total": 1
         },
         "msg": ""
-      }
+      },
+      "rules": [
+        {
+          "category": "business",
+          "title": "权限点列表 返回当前事实",
+          "body": "该查询接口必须按照当前代码和数据表返回稳定字段结构；分页、筛选、排序和空结果语义必须与 api-docs.json 保持一致。接口职责：分页查询权限点，可按标识或名称关键词过滤。",
+          "code_loc": "main.go:138"
+        }
+      ]
     },
     {
       "method": "PUT",
@@ -1561,7 +1645,11 @@
           {
             "name": "role_status",
             "type": "string",
-            "description": "角色当前状态。"
+            "description": "角色当前状态。",
+            "enum": {
+              "enabled": "启用",
+              "disabled": "停用"
+            }
           }
         ],
         "error_codes": [
@@ -1594,7 +1682,15 @@
           "role_status": "enabled"
         },
         "msg": ""
-      }
+      },
+      "rules": [
+        {
+          "category": "constraint",
+          "title": "检查权限 参数与状态校验",
+          "body": "该写入接口必须先校验必填参数、业务状态和数据存在性；校验失败时返回业务错误且不能产生不一致副作用。接口职责：检查指定角色是否启用且拥有指定权限点；角色拥有 system.manage 时视为全权限。",
+          "code_loc": "main.go:140"
+        }
+      ]
     },
     {
       "method": "POST",
@@ -1620,7 +1716,15 @@
         "data": null,
         "msg": "pong"
       },
-      "request_example": {}
+      "request_example": {},
+      "rules": [
+        {
+          "category": "security",
+          "title": "管理后台探活 鉴权边界",
+          "body": "该接口按 auth=api_key 执行访问控制；未满足身份、内部令牌、后台会话或 API key 要求时必须拒绝主流程。接口职责：管理后台专用探活接口，返回 pong。",
+          "code_loc": "main.go:142"
+        }
+      ]
     },
     {
       "method": "POST",
