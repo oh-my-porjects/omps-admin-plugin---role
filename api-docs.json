@@ -1343,7 +1343,17 @@
           {
             "name": "code",
             "type": "string",
-            "description": "权限点标识。"
+            "description": "权限点标识。",
+            "enum_values": [
+              {
+                "value": 0,
+                "label": "成功"
+              },
+              {
+                "value": 1,
+                "label": "失败或未注册"
+              }
+            ]
           },
           {
             "name": "name",
