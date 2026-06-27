@@ -1,0 +1,188 @@
+{
+  "method": "GET",
+  "path": "/api/role/children-tree",
+  "endpoint_key": "GET /api/role/children-tree",
+  "title": "查子树",
+  "auth": "public",
+  "description": "按角色 ID 拉取该角色下的完整未删除子角色树，用于删除前展示影响范围。",
+  "params": [
+    {
+      "name": "role_id",
+      "type": "string",
+      "required": true,
+      "constraint": "UUID。",
+      "description": "当前角色 ID。"
+    }
+  ],
+  "request_example": {
+    "role_id": "00000000-0000-0000-0000-000000000010"
+  },
+  "response": {
+    "data_type": "object",
+    "description": "当前角色及其完整未删除子角色树。",
+    "fields": [
+      {
+        "name": "role_id",
+        "type": "string",
+        "description": "角色 ID。"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "description": "角色名称。"
+      },
+      {
+        "name": "parent_id",
+        "type": "string",
+        "description": "父角色 ID。"
+      },
+      {
+        "name": "parent_role_id",
+        "type": "string",
+        "description": "父角色 ID 兼容字段。"
+      },
+      {
+        "name": "parent_name",
+        "type": "string",
+        "description": "父角色名称。"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "description": "角色状态。",
+        "enum": {
+          "enabled": "启用",
+          "disabled": "停用"
+        }
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "description": "角色说明。"
+      },
+      {
+        "name": "has_children",
+        "type": "boolean",
+        "description": "是否存在下级角色。"
+      },
+      {
+        "name": "children_count",
+        "type": "number",
+        "description": "直接下级角色数量。"
+      },
+      {
+        "name": "children",
+        "type": "array",
+        "description": "递归子角色列表。",
+        "fields": [
+          {
+            "name": "role_id",
+            "type": "string",
+            "description": "子角色 ID。"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "description": "子角色名称。"
+          },
+          {
+            "name": "parent_id",
+            "type": "string",
+            "description": "父角色 ID。"
+          },
+          {
+            "name": "parent_role_id",
+            "type": "string",
+            "description": "父角色 ID 兼容字段。"
+          },
+          {
+            "name": "parent_name",
+            "type": "string",
+            "description": "父角色名称。"
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "description": "子角色状态。",
+            "enum": {
+              "enabled": "启用",
+              "disabled": "停用"
+            }
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "description": "子角色说明。"
+          },
+          {
+            "name": "has_children",
+            "type": "boolean",
+            "description": "是否存在下级角色。"
+          },
+          {
+            "name": "children_count",
+            "type": "number",
+            "description": "直接下级角色数量。"
+          },
+          {
+            "name": "children",
+            "type": "array",
+            "fields": [],
+            "description": "更深层递归子角色列表；结构与当前节点相同。"
+          }
+        ]
+      }
+    ],
+    "error_codes": [
+      {
+        "status": 2311,
+        "msg": "role_id 参数非法。"
+      },
+      {
+        "status": 2312,
+        "msg": "角色不存在或已删除。"
+      },
+      {
+        "status": 2313,
+        "msg": "查询子角色树失败。"
+      }
+    ]
+  },
+  "response_example": {
+    "status": 0,
+    "msg": "",
+    "data": {
+      "role_id": "00000000-0000-0000-0000-000000000010",
+      "name": "运营中心",
+      "parent_id": "00000000-0000-0000-0000-000000000001",
+      "parent_role_id": "00000000-0000-0000-0000-000000000001",
+      "parent_name": "超级管理员",
+      "status": "enabled",
+      "description": "运营团队根角色",
+      "has_children": true,
+      "children_count": 1,
+      "children": [
+        {
+          "role_id": "00000000-0000-0000-0000-000000000011",
+          "name": "活动运营",
+          "parent_id": "00000000-0000-0000-0000-000000000010",
+          "parent_role_id": "00000000-0000-0000-0000-000000000010",
+          "parent_name": "运营中心",
+          "status": "enabled",
+          "description": "活动配置执行",
+          "has_children": false,
+          "children_count": 0,
+          "children": []
+        }
+      ]
+    }
+  },
+  "rules": [
+    {
+      "category": "business",
+      "title": "查子树",
+      "body": "按角色 ID 拉取该角色下的完整未删除子角色树，用于删除前展示影响范围。",
+      "code_loc": "role_handlers.go"
+    }
+  ]
+}

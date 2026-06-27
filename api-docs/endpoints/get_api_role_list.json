@@ -1,0 +1,201 @@
+{
+  "method": "GET",
+  "path": "/api/role/list",
+  "endpoint_key": "GET /api/role/list",
+  "title": "角色列表",
+  "description": "按分页、状态、父角色和关键词查询角色列表。",
+  "auth": "public",
+  "params": [
+    {
+      "name": "page",
+      "type": "integer",
+      "required": true,
+      "constraint": ">= 1。",
+      "description": "页码。"
+    },
+    {
+      "name": "page_size",
+      "type": "integer",
+      "required": true,
+      "constraint": "1-100。",
+      "description": "每页数量。"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "required": false,
+      "constraint": "enabled 或 disabled。",
+      "description": "角色状态过滤。",
+      "enum": {
+        "enabled": "启用",
+        "disabled": "停用"
+      }
+    },
+    {
+      "name": "parent_id",
+      "type": "string",
+      "required": false,
+      "constraint": "为空表示筛选顶级角色；非空必须为 UUID。",
+      "description": "父角色过滤；只要传入该参数就启用父级过滤。"
+    },
+    {
+      "name": "keyword",
+      "type": "string",
+      "required": false,
+      "constraint": "最多 30 个字符。",
+      "description": "按角色名称模糊查询。"
+    }
+  ],
+  "response": {
+    "description": "分页角色列表。",
+    "data_type": "object",
+    "fields": [
+      {
+        "name": "items",
+        "type": "array",
+        "description": "角色列表。",
+        "fields": [
+          {
+            "name": "role_id",
+            "type": "string",
+            "description": "角色 ID。"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "description": "角色名称。"
+          },
+          {
+            "name": "parent_id",
+            "type": "string",
+            "description": "父角色 ID，顶级角色为空。"
+          },
+          {
+            "name": "parent_role_id",
+            "type": "string",
+            "description": "父角色 ID 兼容字段。"
+          },
+          {
+            "name": "parent_name",
+            "type": "string",
+            "description": "父角色名称。"
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "description": "角色状态。",
+            "enum": {
+              "enabled": "启用",
+              "disabled": "停用"
+            }
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "description": "角色说明。"
+          },
+          {
+            "name": "created_at",
+            "type": "string",
+            "description": "创建时间，RFC3339。"
+          },
+          {
+            "name": "updated_at",
+            "type": "string",
+            "description": "更新时间，列表查询中可能为空。"
+          },
+          {
+            "name": "permissions",
+            "type": "array",
+            "description": "列表查询不展开权限，固定为空数组。",
+            "fields": [
+              {
+                "name": "permission_id",
+                "type": "string",
+                "description": "权限点 ID。"
+              },
+              {
+                "name": "code",
+                "type": "string",
+                "description": "权限点标识。"
+              },
+              {
+                "name": "name",
+                "type": "string",
+                "description": "权限点名称。"
+              },
+              {
+                "name": "description",
+                "type": "string",
+                "description": "权限点说明。"
+              },
+              {
+                "name": "created_at",
+                "type": "string",
+                "description": "创建时间，RFC3339。"
+              }
+            ]
+          },
+          {
+            "name": "permission_ids",
+            "type": "array",
+            "item_type": "string",
+            "description": "列表查询通常不返回该字段。"
+          }
+        ]
+      },
+      {
+        "name": "total",
+        "type": "integer",
+        "description": "符合条件的总数。"
+      }
+    ],
+    "error_codes": [
+      {
+        "status": 2111,
+        "msg": "分页参数不合法。"
+      },
+      {
+        "status": 2112,
+        "msg": "状态参数不合法。"
+      },
+      {
+        "status": 2113,
+        "msg": "父角色参数格式不合法。"
+      },
+      {
+        "status": 2114,
+        "msg": "关键词过长或查询角色列表失败。"
+      }
+    ]
+  },
+  "response_example": {
+    "status": 0,
+    "data": {
+      "items": [
+        {
+          "role_id": "00000000-0000-0000-0000-000000000003",
+          "name": "开发者",
+          "parent_id": "",
+          "parent_role_id": "",
+          "parent_name": "",
+          "status": "enabled",
+          "description": "系统预设角色，开发人员使用",
+          "created_at": "2026-05-20T04:00:00Z",
+          "updated_at": "",
+          "permissions": []
+        }
+      ],
+      "total": 1
+    },
+    "msg": ""
+  },
+  "rules": [
+    {
+      "category": "business",
+      "title": "角色列表 返回当前事实",
+      "body": "该查询接口必须按照当前代码和数据表返回稳定字段结构；分页、筛选、排序和空结果语义必须与 api-docs.json 保持一致。接口职责：按分页、状态、父角色和关键词查询角色列表。",
+      "code_loc": "main.go:130"
+    }
+  ]
+}

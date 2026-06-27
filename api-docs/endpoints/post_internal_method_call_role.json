@@ -1,0 +1,61 @@
+{
+  "method": "POST",
+  "path": "/_internal/method-call/role",
+  "endpoint_key": "POST /_internal/method-call/role",
+  "title": "内部方法调用",
+  "description": "Runtime 内部方法调用入口，根据 method 查找 Methods 表并传入动态 args。",
+  "auth": "api_key",
+  "params": [
+    {
+      "name": "method",
+      "type": "string",
+      "required": true,
+      "constraint": "不能为空，且必须已注册到 Methods。",
+      "description": "内部方法名。"
+    },
+    {
+      "name": "args",
+      "type": "object",
+      "required": false,
+      "constraint": "动态 JSON 对象，具体结构由被调用方法决定。",
+      "description": "内部方法参数。",
+      "fields": []
+    }
+  ],
+  "request_example": {
+    "method": "ExampleMethod",
+    "args": {
+      "id": "00000000-0000-0000-0000-000000000001"
+    }
+  },
+  "response": {
+    "description": "内部方法返回值，结构由被调用方法决定。",
+    "data_type": "object",
+    "fields": [],
+    "error_codes": [
+      {
+        "status": 401,
+        "msg": "X-Internal-Token 缺失或与 RUNTIME_INTERNAL_TOKEN 不匹配。"
+      },
+      {
+        "status": 1,
+        "msg": "请求体解析失败、method 为空、方法未注册、方法返回错误或方法 panic。"
+      }
+    ]
+  },
+  "response_example": {
+    "status": 0,
+    "data": {
+      "ok": true
+    },
+    "msg": ""
+  },
+  "rules": [
+    {
+      "category": "security",
+      "title": "内部方法调用必须校验内部令牌",
+      "body": "该端点先读取 RUNTIME_INTERNAL_TOKEN，并要求请求头 X-Internal-Token 与之完全一致；令牌为空也会拒绝调用。",
+      "code_loc": "method_call.go:33-38"
+    }
+  ]
+}

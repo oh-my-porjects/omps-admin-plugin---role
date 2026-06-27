@@ -1,0 +1,90 @@
+{
+  "method": "POST",
+  "path": "/api/role/disable",
+  "endpoint_key": "POST /api/role/disable",
+  "title": "禁用角色",
+  "auth": "public",
+  "description": "将指定角色切换为禁用状态；禁用后该角色不再参与权限校验。",
+  "params": [
+    {
+      "name": "role_id",
+      "type": "string",
+      "required": true,
+      "constraint": "UUID。",
+      "description": "要禁用的角色 ID。"
+    }
+  ],
+  "request_example": {
+    "role_id": "00000000-0000-0000-0000-000000000012"
+  },
+  "response": {
+    "data_type": "object",
+    "description": "禁用后的角色基本信息。",
+    "fields": [
+      {
+        "name": "role_id",
+        "type": "string",
+        "description": "角色 ID。"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "description": "角色名称。"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "description": "角色状态，固定为 disabled。",
+        "enum": {
+          "enabled": "启用",
+          "disabled": "停用"
+        }
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "description": "更新时间，RFC3339。"
+      }
+    ],
+    "error_codes": [
+      {
+        "status": 2331,
+        "msg": "请求体解析失败或 role_id 参数非法。"
+      },
+      {
+        "status": 2332,
+        "msg": "角色不存在或已删除。"
+      },
+      {
+        "status": 2333,
+        "msg": "根角色或系统内置角色不可禁用。"
+      },
+      {
+        "status": 2334,
+        "msg": "角色已处于禁用状态。"
+      },
+      {
+        "status": 2335,
+        "msg": "禁用角色失败。"
+      }
+    ]
+  },
+  "response_example": {
+    "status": 0,
+    "msg": "",
+    "data": {
+      "role_id": "00000000-0000-0000-0000-000000000012",
+      "name": "活动运营",
+      "status": "disabled",
+      "updated_at": "2026-05-21T02:05:00Z"
+    }
+  },
+  "rules": [
+    {
+      "category": "business",
+      "title": "禁用角色",
+      "body": "将指定角色切换为禁用状态；禁用后该角色不再参与权限校验。",
+      "code_loc": "role_handlers.go"
+    }
+  ]
+}

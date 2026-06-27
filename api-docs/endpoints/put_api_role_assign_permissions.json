@@ -1,0 +1,94 @@
+{
+  "method": "PUT",
+  "path": "/api/role/assign-permissions",
+  "endpoint_key": "PUT /api/role/assign-permissions",
+  "title": "分配角色权限",
+  "description": "覆盖角色已绑定权限点，并校验账号操作范围、父级权限边界和子角色权限边界。",
+  "auth": "public",
+  "params": [
+    {
+      "name": "role_id",
+      "type": "string",
+      "required": true,
+      "constraint": "UUID。",
+      "description": "角色 ID。"
+    },
+    {
+      "name": "permission_ids",
+      "type": "array",
+      "item_type": "string",
+      "required": true,
+      "constraint": "每项必须是 UUID，重复值会去重；可传空数组清空权限。",
+      "description": "新的权限点 ID 列表。"
+    }
+  ],
+  "request_example": {
+    "role_id": "00000000-0000-0000-0000-000000000003",
+    "permission_ids": [
+      "00000000-0000-0000-0000-000000000002"
+    ]
+  },
+  "response": {
+    "description": "分配后的角色权限摘要。",
+    "data_type": "object",
+    "fields": [
+      {
+        "name": "role_id",
+        "type": "string",
+        "description": "角色 ID。"
+      },
+      {
+        "name": "permission_ids",
+        "type": "array",
+        "item_type": "string",
+        "description": "分配后的权限点 ID 列表。"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "description": "角色更新时间，RFC3339。"
+      }
+    ],
+    "error_codes": [
+      {
+        "status": 4201,
+        "msg": "请求体解析失败，或角色 ID/权限点 ID 列表格式不合法。"
+      },
+      {
+        "status": 4202,
+        "msg": "角色不存在。"
+      },
+      {
+        "status": 4203,
+        "msg": "角色状态不允许分配权限，无法读取当前后台账号身份，或角色不在当前账号可操作范围内。"
+      },
+      {
+        "status": 4204,
+        "msg": "权限不存在或超出父角色权限范围。"
+      },
+      {
+        "status": 4205,
+        "msg": "分配权限失败，或清理权限会导致子角色越权。"
+      }
+    ]
+  },
+  "response_example": {
+    "status": 0,
+    "data": {
+      "role_id": "00000000-0000-0000-0000-000000000003",
+      "permission_ids": [
+        "00000000-0000-0000-0000-000000000002"
+      ],
+      "updated_at": "2026-05-20T04:15:00Z"
+    },
+    "msg": ""
+  },
+  "rules": [
+    {
+      "category": "constraint",
+      "title": "权限分配同时受父级和子级边界约束",
+      "body": "新的权限集合必须是父角色权限集合的子集；同时如果当前角色已有子角色，清理权限不能导致任一子角色拥有当前角色没有的权限。",
+      "code_loc": "role_handlers.go:357-373"
+    }
+  ]
+}

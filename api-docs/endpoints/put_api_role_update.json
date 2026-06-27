@@ -1,0 +1,207 @@
+{
+  "method": "PUT",
+  "path": "/api/role/update",
+  "endpoint_key": "PUT /api/role/update",
+  "title": "更新角色",
+  "description": "更新角色名称、父级、说明和状态。",
+  "auth": "public",
+  "params": [
+    {
+      "name": "role_id",
+      "type": "string",
+      "required": true,
+      "constraint": "UUID。",
+      "description": "角色 ID。"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "required": true,
+      "constraint": "2-30 个字符。",
+      "description": "角色名称。"
+    },
+    {
+      "name": "parent_id",
+      "type": "string",
+      "required": false,
+      "constraint": "为空表示顶级角色；非空必须为 UUID 且不能形成循环。",
+      "description": "父角色 ID。"
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "required": false,
+      "constraint": "最多 200 个字符。",
+      "description": "角色说明。"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "required": true,
+      "constraint": "enabled 或 disabled。",
+      "description": "角色状态。",
+      "enum": {
+        "enabled": "启用",
+        "disabled": "停用"
+      }
+    }
+  ],
+  "request_example": {
+    "role_id": "00000000-0000-0000-0000-000000000003",
+    "name": "客服支持",
+    "parent_id": "00000000-0000-0000-0000-000000000001",
+    "description": "负责客服处理",
+    "status": "enabled"
+  },
+  "response": {
+    "description": "更新后的角色信息。",
+    "data_type": "object",
+    "fields": [
+      {
+        "name": "role_id",
+        "type": "string",
+        "description": "角色 ID。"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "description": "角色名称。"
+      },
+      {
+        "name": "parent_id",
+        "type": "string",
+        "description": "父角色 ID，顶级角色为空。"
+      },
+      {
+        "name": "parent_role_id",
+        "type": "string",
+        "description": "父角色 ID 兼容字段。"
+      },
+      {
+        "name": "parent_name",
+        "type": "string",
+        "description": "父角色名称，更新响应中为空。"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "description": "角色状态。",
+        "enum": {
+          "enabled": "启用",
+          "disabled": "停用"
+        }
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "description": "角色说明。"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "description": "创建时间，RFC3339。"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "description": "更新时间，RFC3339。"
+      },
+      {
+        "name": "permissions",
+        "type": "array",
+        "description": "更新响应不展开权限，固定为空数组。",
+        "fields": [
+          {
+            "name": "permission_id",
+            "type": "string",
+            "description": "权限点 ID。"
+          },
+          {
+            "name": "code",
+            "type": "string",
+            "description": "权限点标识。"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "description": "权限点名称。"
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "description": "权限点说明。"
+          },
+          {
+            "name": "created_at",
+            "type": "string",
+            "description": "创建时间，RFC3339。"
+          }
+        ]
+      },
+      {
+        "name": "permission_ids",
+        "type": "array",
+        "item_type": "string",
+        "description": "更新响应通常不返回该字段。"
+      }
+    ],
+    "error_codes": [
+      {
+        "status": 2131,
+        "msg": "请求体解析失败，或角色 ID 缺失/格式不合法。"
+      },
+      {
+        "status": 2132,
+        "msg": "角色不存在。"
+      },
+      {
+        "status": 2133,
+        "msg": "角色名称、状态或说明参数不合法。"
+      },
+      {
+        "status": 2134,
+        "msg": "父角色不存在或父角色设置不合法。"
+      },
+      {
+        "status": 2135,
+        "msg": "角色层级不允许形成循环。"
+      },
+      {
+        "status": 2136,
+        "msg": "当前角色权限超出新父角色权限范围。"
+      },
+      {
+        "status": 2137,
+        "msg": "同一父角色下角色名称已存在。"
+      },
+      {
+        "status": 2138,
+        "msg": "更新角色失败。"
+      }
+    ]
+  },
+  "response_example": {
+    "status": 0,
+    "data": {
+      "role_id": "00000000-0000-0000-0000-000000000003",
+      "name": "客服支持",
+      "parent_id": "00000000-0000-0000-0000-000000000001",
+      "parent_role_id": "00000000-0000-0000-0000-000000000001",
+      "parent_name": "",
+      "status": "enabled",
+      "description": "负责客服处理",
+      "created_at": "2026-05-20T04:00:00Z",
+      "updated_at": "2026-05-20T04:10:00Z",
+      "permissions": []
+    },
+    "msg": ""
+  },
+  "rules": [
+    {
+      "category": "constraint",
+      "title": "角色层级禁止自引用和循环",
+      "body": "更新父角色时，父角色不能等于自身，也不能把当前角色移动到自己的后代下面。",
+      "code_loc": "role_handlers.go:207-219"
+    }
+  ]
+}

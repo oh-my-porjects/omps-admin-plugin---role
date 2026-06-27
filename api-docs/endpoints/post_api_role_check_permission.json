@@ -1,0 +1,86 @@
+{
+  "method": "POST",
+  "path": "/api/role/check-permission",
+  "endpoint_key": "POST /api/role/check-permission",
+  "title": "检查权限",
+  "description": "检查指定角色是否启用且拥有指定权限点；角色拥有 system.manage 时视为全权限。",
+  "auth": "public",
+  "params": [
+    {
+      "name": "role_id",
+      "type": "string",
+      "required": true,
+      "constraint": "UUID。",
+      "description": "角色 ID。"
+    },
+    {
+      "name": "permission_code",
+      "type": "string",
+      "required": true,
+      "constraint": "3-80 个字符，仅允许小写字母、数字、点、下划线、短横线。",
+      "description": "权限点标识。"
+    }
+  ],
+  "request_example": {
+    "role_id": "00000000-0000-0000-0000-000000000001",
+    "permission_code": "system.manage"
+  },
+  "response": {
+    "description": "权限检查结果。",
+    "data_type": "object",
+    "fields": [
+      {
+        "name": "allowed",
+        "type": "boolean",
+        "description": "角色启用且直接拥有权限点，或拥有 system.manage 全权限时为 true。"
+      },
+      {
+        "name": "role_status",
+        "type": "string",
+        "description": "角色当前状态。",
+        "enum": {
+          "enabled": "启用",
+          "disabled": "停用"
+        }
+      }
+    ],
+    "error_codes": [
+      {
+        "status": 2171,
+        "msg": "请求体解析失败，或角色 ID 缺失/格式不合法。"
+      },
+      {
+        "status": 2172,
+        "msg": "权限点标识缺失或格式不合法。"
+      },
+      {
+        "status": 2173,
+        "msg": "角色不存在。"
+      },
+      {
+        "status": 2174,
+        "msg": "权限点不存在。"
+      },
+      {
+        "status": 2175,
+        "msg": "权限校验失败。"
+      }
+    ]
+  },
+  "response_example": {
+    "status": 0,
+    "data": {
+      "allowed": true,
+      "role_status": "enabled"
+    },
+    "msg": ""
+  },
+  "rules": [
+    {
+      "category": "constraint",
+      "title": "检查权限 参数与状态校验",
+      "body": "该写入接口必须先校验必填参数、业务状态和数据存在性；校验失败时返回业务错误且不能产生不一致副作用。接口职责：检查指定角色是否启用且拥有指定权限点；角色拥有 system.manage 时视为全权限。",
+      "code_loc": "main.go:140"
+    }
+  ]
+}

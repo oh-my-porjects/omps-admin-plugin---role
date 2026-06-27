@@ -1,0 +1,52 @@
+{
+  "method": "POST",
+  "path": "/_internal/scheduled-trigger/role",
+  "endpoint_key": "POST /_internal/scheduled-trigger/role",
+  "title": "内部触发定时任务",
+  "description": "Runtime 内部手动触发已注册定时任务，并以 SSE 返回执行日志。",
+  "auth": "api_key",
+  "params": [
+    {
+      "name": "task_name",
+      "type": "string",
+      "required": true,
+      "constraint": "不能为空，且必须已注册到 ScheduledTasks。",
+      "description": "定时任务名称。"
+    }
+  ],
+  "request_example": {
+    "task_name": "cleanup_expired_sessions"
+  },
+  "response": {
+    "description": "SSE 文本流，每条事件为一行执行日志。",
+    "data_type": "null",
+    "fields": [],
+    "error_codes": [
+      {
+        "status": 401,
+        "msg": "X-Internal-Token 缺失或与 RUNTIME_INTERNAL_TOKEN 不匹配。"
+      },
+      {
+        "status": 400,
+        "msg": "请求体解析失败或 task_name 为空。"
+      },
+      {
+        "status": 404,
+        "msg": "未注册的定时任务。"
+      }
+    ]
+  },
+  "response_example": {
+    "status": 0,
+    "data": "data: [2026-05-20T04:00:00Z] 任务 cleanup_expired_sessions 开始执行\\n\\ndata: [2026-05-20T04:00:01Z] 任务完成（耗时 1s）\\n\\n",
+    "msg": ""
+  },
+  "rules": [
+    {
+      "category": "concurrency",
+      "title": "同一模块定时任务触发串行执行",
+      "body": "触发入口使用全局互斥锁包裹任务执行，同一时间只允许一个手动触发任务运行。",
+      "code_loc": "scheduled_trigger.go:74-90"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "module": "role",
+  "module_title": "角色公共模块",
+  "version": 1,
+  "endpoints": [
+    {
+      "key": "GET /api/role/hello",
+      "file": "endpoints/get_api_role_hello.json"
+    },
+    {
+      "key": "POST /api/role/create",
+      "file": "endpoints/post_api_role_create.json"
+    },
+    {
+      "key": "GET /api/role/list",
+      "file": "endpoints/get_api_role_list.json"
+    },
+    {
+      "key": "GET /api/role/detail",
+      "file": "endpoints/get_api_role_detail.json"
+    },
+    {
+      "key": "PUT /api/role/update",
+      "file": "endpoints/put_api_role_update.json"
+    },
+    {
+      "key": "POST /api/role/enable",
+      "file": "endpoints/post_api_role_enable.json"
+    },
+    {
+      "key": "POST /api/role/disable",
+      "file": "endpoints/post_api_role_disable.json"
+    },
+    {
+      "key": "POST /api/role/delete",
+      "file": "endpoints/post_api_role_delete.json"
+    },
+    {
+      "key": "GET /api/role/children-tree",
+      "file": "endpoints/get_api_role_children_tree.json"
+    },
+    {
+      "key": "POST /api/role/permission-create",
+      "file": "endpoints/post_api_role_permission_create.json"
+    },
+    {
+      "key": "GET /api/role/permission-list",
+      "file": "endpoints/get_api_role_permission_list.json"
+    },
+    {
+      "key": "PUT /api/role/assign-permissions",
+      "file": "endpoints/put_api_role_assign_permissions.json"
+    },
+    {
+      "key": "POST /api/role/check-permission",
+      "file": "endpoints/post_api_role_check_permission.json"
+    },
+    {
+      "key": "POST /api/role/admin/ping",
+      "file": "endpoints/post_api_role_admin_ping.json"
+    },
+    {
+      "key": "POST /_internal/method-call/role",
+      "file": "endpoints/post_internal_method_call_role.json"
+    },
+    {
+      "key": "POST /_internal/scheduled-trigger/role",
+      "file": "endpoints/post_internal_scheduled_trigger_role.json"
+    },
+    {
+      "key": "POST /_internal/selftest/role",
+      "file": "endpoints/post_internal_selftest_role.json"
+    }
+  ],
+  "ws_events": [],
+  "components": {
+    "schemas": [],
+    "enums": []
+  }
+}

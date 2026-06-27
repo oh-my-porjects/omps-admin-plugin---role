@@ -1,0 +1,90 @@
+{
+  "method": "POST",
+  "path": "/api/role/enable",
+  "endpoint_key": "POST /api/role/enable",
+  "title": "启用角色",
+  "auth": "public",
+  "description": "将指定角色恢复为启用状态；启用前必须保证父级角色已启用且目标未删除。",
+  "params": [
+    {
+      "name": "role_id",
+      "type": "string",
+      "required": true,
+      "constraint": "UUID。",
+      "description": "要启用的角色 ID。"
+    }
+  ],
+  "request_example": {
+    "role_id": "00000000-0000-0000-0000-000000000012"
+  },
+  "response": {
+    "data_type": "object",
+    "description": "启用后的角色基本信息。",
+    "fields": [
+      {
+        "name": "role_id",
+        "type": "string",
+        "description": "角色 ID。"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "description": "角色名称。"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "description": "角色状态，固定为 enabled。",
+        "enum": {
+          "enabled": "启用",
+          "disabled": "停用"
+        }
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "description": "更新时间，RFC3339。"
+      }
+    ],
+    "error_codes": [
+      {
+        "status": 2341,
+        "msg": "请求体解析失败或 role_id 参数非法。"
+      },
+      {
+        "status": 2342,
+        "msg": "角色不存在或已删除。"
+      },
+      {
+        "status": 2343,
+        "msg": "角色已处于启用状态。"
+      },
+      {
+        "status": 2344,
+        "msg": "父级角色不存在、已删除或未启用。"
+      },
+      {
+        "status": 2345,
+        "msg": "启用角色失败。"
+      }
+    ]
+  },
+  "response_example": {
+    "status": 0,
+    "msg": "",
+    "data": {
+      "role_id": "00000000-0000-0000-0000-000000000012",
+      "name": "活动运营",
+      "status": "enabled",
+      "updated_at": "2026-05-21T02:10:00Z"
+    }
+  },
+  "rules": [
+    {
+      "category": "business",
+      "title": "启用角色",
+      "body": "将指定角色恢复为启用状态；启用前必须保证父级角色已启用且目标未删除。",
+      "code_loc": "role_handlers.go"
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "method": "GET",
+  "path": "/api/role/permission-list",
+  "endpoint_key": "GET /api/role/permission-list",
+  "title": "权限点列表",
+  "description": "分页查询权限点，可按标识或名称关键词过滤。",
+  "auth": "public",
+  "params": [
+    {
+      "name": "page",
+      "type": "integer",
+      "required": true,
+      "constraint": ">= 1。",
+      "description": "页码。"
+    },
+    {
+      "name": "page_size",
+      "type": "integer",
+      "required": true,
+      "constraint": "1-100。",
+      "description": "每页数量。"
+    },
+    {
+      "name": "keyword",
+      "type": "string",
+      "required": false,
+      "constraint": "最多 80 个字符。",
+      "description": "按权限点标识或名称模糊查询。"
+    }
+  ],
+  "response": {
+    "description": "分页权限点列表。",
+    "data_type": "object",
+    "fields": [
+      {
+        "name": "items",
+        "type": "array",
+        "description": "权限点列表。",
+        "fields": [
+          {
+            "name": "permission_id",
+            "type": "string",
+            "description": "权限点 ID。"
+          },
+          {
+            "name": "code",
+            "type": "string",
+            "description": "权限点标识。"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "description": "权限点名称。"
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "description": "权限点说明。"
+          },
+          {
+            "name": "created_at",
+            "type": "string",
+            "description": "创建时间，RFC3339。"
+          }
+        ]
+      },
+      {
+        "name": "total",
+        "type": "integer",
+        "description": "符合条件的总数。"
+      }
+    ],
+    "error_codes": [
+      {
+        "status": 2151,
+        "msg": "分页参数不合法。"
+      },
+      {
+        "status": 2152,
+        "msg": "关键词参数过长。"
+      },
+      {
+        "status": 2153,
+        "msg": "查询权限点列表失败。"
+      }
+    ]
+  },
+  "response_example": {
+    "status": 0,
+    "data": {
+      "items": [
+        {
+          "permission_id": "00000000-0000-0000-0000-000000000002",
+          "code": "system.manage",
+          "name": "System Manage",
+          "description": "root management permission",
+          "created_at": "2026-05-20T04:00:00Z"
+        }
+      ],
+      "total": 1
+    },
+    "msg": ""
+  },
+  "rules": [
+    {
+      "category": "business",
+      "title": "权限点列表 返回当前事实",
+      "body": "该查询接口必须按照当前代码和数据表返回稳定字段结构；分页、筛选、排序和空结果语义必须与 api-docs.json 保持一致。接口职责：分页查询权限点，可按标识或名称关键词过滤。",
+      "code_loc": "main.go:138"
+    }
+  ]
+}

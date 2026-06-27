@@ -1,0 +1,38 @@
+{
+  "method": "POST",
+  "path": "/_internal/selftest/role",
+  "endpoint_key": "POST /_internal/selftest/role",
+  "title": "废弃自测入口",
+  "description": "已废弃的内部自测端点，仅返回迁移提示；流水线改为直接读取 tests/*.test.json。",
+  "auth": "api_key",
+  "params": [],
+  "response": {
+    "description": "废弃提示，无数据体。",
+    "data_type": "null",
+    "fields": [],
+    "error_codes": [
+      {
+        "status": 401,
+        "msg": "X-Internal-Token 缺失或与 RUNTIME_INTERNAL_TOKEN 不匹配。"
+      },
+      {
+        "status": 1,
+        "msg": "端点已废弃，调用方应改用 admin-server 直接执行 tests/*.test.json。"
+      }
+    ]
+  },
+  "response_example": {
+    "status": 1,
+    "data": null,
+    "msg": "selftest 端点已废弃；流水线 API 自动测试改由 admin-server 直接读 tests/*.test.json 执行（见 scheduler_apitest_executor.go）。开发者本机自测单接口请直接 curl runtime 8080 业务端口并带上 X-API-Key / X-User-ID。"
+  },
+  "rules": [
+    {
+      "category": "flow",
+      "title": "selftest 入口仅保留废弃提示",
+      "body": "端点仍校验内部令牌，但不再执行任何接口自测；自动测试由 admin-server 直接读取 tests/*.test.json。",
+      "code_loc": "selftest.go:28-38"
+    }
+  ],
+  "request_example": {}
+}

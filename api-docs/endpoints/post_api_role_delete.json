@@ -1,0 +1,85 @@
+{
+  "method": "POST",
+  "path": "/api/role/delete",
+  "endpoint_key": "POST /api/role/delete",
+  "title": "删除角色",
+  "auth": "public",
+  "description": "将目标角色及其全部未删除下级角色标记为已删除。",
+  "params": [
+    {
+      "name": "role_id",
+      "type": "string",
+      "required": true,
+      "constraint": "UUID。",
+      "description": "要删除的角色 ID。"
+    }
+  ],
+  "request_example": {
+    "role_id": "00000000-0000-0000-0000-000000000010"
+  },
+  "response": {
+    "data_type": "object",
+    "description": "本次删除影响的角色信息。",
+    "fields": [
+      {
+        "name": "role_id",
+        "type": "string",
+        "description": "被删除的根角色 ID。"
+      },
+      {
+        "name": "deleted_count",
+        "type": "number",
+        "description": "本次被标记删除的角色总数。"
+      },
+      {
+        "name": "deleted_role_ids",
+        "type": "array",
+        "item_type": "string",
+        "description": "被标记删除的角色 ID 列表。"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "description": "删除时间，RFC3339。"
+      }
+    ],
+    "error_codes": [
+      {
+        "status": 2321,
+        "msg": "请求体解析失败或 role_id 参数非法。"
+      },
+      {
+        "status": 2322,
+        "msg": "角色不存在或已删除。"
+      },
+      {
+        "status": 2323,
+        "msg": "根角色或系统内置角色不可删除。"
+      },
+      {
+        "status": 2324,
+        "msg": "删除角色或级联删除子角色失败。"
+      }
+    ]
+  },
+  "response_example": {
+    "status": 0,
+    "msg": "",
+    "data": {
+      "role_id": "00000000-0000-0000-0000-000000000010",
+      "deleted_count": 3,
+      "deleted_role_ids": [
+        "00000000-0000-0000-0000-000000000010"
+      ],
+      "deleted_at": "2026-05-21T02:00:00Z"
+    }
+  },
+  "rules": [
+    {
+      "category": "business",
+      "title": "删除角色",
+      "body": "将目标角色及其全部未删除下级角色标记为已删除。",
+      "code_loc": "role_handlers.go"
+    }
+  ]
+}
