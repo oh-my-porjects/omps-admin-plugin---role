@@ -23,7 +23,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -108,9 +107,6 @@ type PluginContext struct {
 // Runtime 通过 plugin.Lookup("Plugin") 加载此符号
 // 符号名必须为 "Plugin"，类型必须实现 GamePlugin 接口
 var Plugin = &RolePlugin{}
-
-//go:embed admin-web.yaml
-var AdminWebHint string
 
 // Routes 声明本插件处理的所有 HTTP 路径
 // Runtime 在 plugin.Lookup("Routes") 时读取这个 map，把所有路径注册到全局路由表

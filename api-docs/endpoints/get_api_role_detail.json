@@ -103,7 +103,7 @@
         "name": "permission_ids",
         "type": "array",
         "item_type": "string",
-        "description": "详情查询通常不返回该字段。"
+        "description": "当前角色已绑定权限点 ID 列表；编辑或重新分配权限时可直接作为多选组件初始值。"
       }
     ],
     "error_codes": [
@@ -141,6 +141,9 @@
           "description": "root management permission",
           "created_at": "2026-05-20T04:00:00Z"
         }
+      ],
+      "permission_ids": [
+        "00000000-0000-0000-0000-000000000002"
       ]
     },
     "msg": ""

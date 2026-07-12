@@ -267,6 +267,10 @@ func (p *RolePlugin) roleDetail(ctx context.Context, roleID string) (roleRespons
 		return roleResponse{}, false, err
 	}
 	resp.Permissions = permissions
+	resp.PermissionIDs = make([]string, 0, len(permissions))
+	for _, permission := range permissions {
+		resp.PermissionIDs = append(resp.PermissionIDs, permission.PermissionID)
+	}
 	return resp, true, nil
 }
 

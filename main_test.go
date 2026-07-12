@@ -74,6 +74,20 @@ func TestHandleRoleCreateParentAndPermissions(t *testing.T) {
 	}
 }
 
+func TestRoleDetailReturnsPermissionIDsForEditableBinding(t *testing.T) {
+	p := testRolePlugin()
+	response, exists, err := p.roleDetail(t.Context(), rootRoleID)
+	if err != nil {
+		t.Fatalf("roleDetail() error = %v", err)
+	}
+	if !exists {
+		t.Fatal("root role should exist in the test store")
+	}
+	if len(response.PermissionIDs) != 1 || response.PermissionIDs[0] != rootPermID {
+		t.Fatalf("permission_ids = %#v, want [%s]", response.PermissionIDs, rootPermID)
+	}
+}
+
 func TestHandleRoleCreateUsesUniqueAccountRole(t *testing.T) {
 	p := testRolePlugin()
 	req := httptest.NewRequest(http.MethodPost, "/api/role/create", jsonBody(map[string]any{
