@@ -45,22 +45,8 @@ func (p *RolePlugin) fetchAdminAccountContext(r *http.Request, token string) (ad
 	if p == nil {
 		return adminAccountContext{}, false, errors.New("role plugin is nil")
 	}
-	endpoint := p.runtimeURL(r, "/api/account/me") + "?session_token=" + url.QueryEscape(token)
-	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, endpoint, nil)
-	if err != nil {
-		return adminAccountContext{}, false, err
-	}
-	p.applyAdminAPIKey(req)
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return adminAccountContext{}, false, err
-	}
-	defer res.Body.Close()
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return adminAccountContext{}, false, errors.New("account me http status failed")
-	}
 	var out accountMeResponse
-	if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
+	if err := p.doAdminAccountRequest(r, "/api/account/me?session_token="+url.QueryEscape(token), &out); err != nil {
 		return adminAccountContext{}, false, err
 	}
 	if out.Status != 0 {
@@ -88,22 +74,9 @@ func (p *RolePlugin) fetchAdminAccountContext(r *http.Request, token string) (ad
 }
 
 func (p *RolePlugin) fetchAdminAccountDetailContext(r *http.Request, token, accountID string) (adminAccountContext, bool, error) {
-	endpoint := p.runtimeURL(r, "/api/account/detail") + "?operator_session_token=" + url.QueryEscape(token) + "&account_id=" + url.QueryEscape(accountID)
-	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, endpoint, nil)
-	if err != nil {
-		return adminAccountContext{}, false, err
-	}
-	p.applyAdminAPIKey(req)
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return adminAccountContext{}, false, err
-	}
-	defer res.Body.Close()
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return adminAccountContext{}, false, errors.New("account detail http status failed")
-	}
 	var out accountDetailResponse
-	if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
+	target := "/api/account/detail?operator_session_token=" + url.QueryEscape(token) + "&account_id=" + url.QueryEscape(accountID)
+	if err := p.doAdminAccountRequest(r, target, &out); err != nil {
 		return adminAccountContext{}, false, err
 	}
 	if out.Status != 0 {
@@ -119,11 +92,27 @@ func (p *RolePlugin) fetchAdminAccountDetailContext(r *http.Request, token, acco
 	return ctx, true, nil
 }
 
-func (p *RolePlugin) applyAdminAPIKey(req *http.Request) {
-	if p == nil || req == nil || p.adminAPIKey == "" {
-		return
+func (p *RolePlugin) doAdminAccountRequest(r *http.Request, target string, out any) error {
+	if p == nil || p.internalRequest == nil {
+		return errors.New("runtime internal request bridge unavailable")
 	}
-	req.Header.Set("X-API-Key", p.adminAPIKey)
+	ctx := context.Background()
+	headers := make(http.Header)
+	if r != nil {
+		ctx = r.Context()
+		headers = r.Header.Clone()
+	}
+	if p.adminAPIKey != "" {
+		headers.Set("X-API-Key", p.adminAPIKey)
+	}
+	status, _, responseBody, err := p.internalRequest(ctx, http.MethodGet, target, nil, headers)
+	if err != nil {
+		return err
+	}
+	if status < http.StatusOK || status >= http.StatusMultipleChoices {
+		return errors.New("account api http status failed")
+	}
+	return json.Unmarshal(responseBody, out)
 }
 
 func (c adminAccountContext) uniqueRoleID() (string, bool) {

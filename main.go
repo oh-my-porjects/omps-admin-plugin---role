@@ -27,7 +27,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 )
@@ -65,12 +64,13 @@ import (
 //   - Push / Emit / Broadcast / IsOnline: 模块给客户端主动发消息时调
 //   - RegisterAuth: 仅登录模块在 Init 里调一次，把鉴权回调交给 runtime
 type PluginContext struct {
-	DB             *sql.DB
-	Config         map[string]string
-	Logger         *slog.Logger
-	LifecycleCtx   context.Context
-	RegisterWorker func() func() // goroutine 起来时调用，返回 dereg 函数供 defer
-	IsUnloading    func() bool   // 查询模块是否处于 unloading（外部/定时任务可据此拒绝接新工作）
+	DB              *sql.DB
+	Config          map[string]string
+	Logger          *slog.Logger
+	LifecycleCtx    context.Context
+	RegisterWorker  func() func() // goroutine 起来时调用，返回 dereg 函数供 defer
+	IsUnloading     func() bool   // 查询模块是否处于 unloading（外部/定时任务可据此拒绝接新工作）
+	InternalRequest func(context.Context, string, string, []byte, http.Header) (int, http.Header, []byte, error)
 
 	// Push 给单个用户发"必送达"通知；模块业务里需要"通知用户"时调它
 	// 入 ws_outbox 表后立即返回，后台 worker 投递，离线用户上线补发
@@ -223,8 +223,8 @@ type RolePlugin struct {
 	isOnline  func(userID string) bool
 	audit     func(action string, before any, after any, extra map[string]any)
 
-	runtimeAddr string
-	adminAPIKey string
+	internalRequest func(context.Context, string, string, []byte, http.Header) (int, http.Header, []byte, error)
+	adminAPIKey     string
 
 	mu          sync.Mutex
 	roles       map[string]roleRecord
@@ -253,7 +253,7 @@ func (p *RolePlugin) Init(ctx PluginContext) error {
 	p.broadcast = ctx.Broadcast
 	p.isOnline = ctx.IsOnline
 	p.audit = ctx.Audit
-	p.runtimeAddr = ctx.Config["RUNTIME_ADDR"]
+	p.internalRequest = ctx.InternalRequest
 	p.adminAPIKey = ctx.Config["ADMIN_API_KEY"]
 	// 仅登录模块需要：把鉴权回调注册给 runtime；普通业务模块这一行可删
 	p.registerAuthIfLoginModule(ctx)
@@ -265,20 +265,6 @@ func (p *RolePlugin) Init(ctx PluginContext) error {
 	// 后台 worker 启动示例（见文件顶部 PluginContext 注释）：
 	//   go p.runTicker()
 	return nil
-}
-
-func (p *RolePlugin) runtimeURL(r *http.Request, path string) string {
-	host := p.runtimeAddr
-	if host == "" && r != nil {
-		host = r.Host
-	}
-	if host == "" || host == "example.com" || strings.Contains(host, "link-api.com") || strings.Contains(host, "pages.dev") {
-		host = "127.0.0.1:8080"
-	}
-	if strings.Contains(host, "://") {
-		return strings.TrimRight(host, "/") + path
-	}
-	return "http://" + strings.TrimRight(host, "/") + path
 }
 
 // Shutdown 插件优雅关闭

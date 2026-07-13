@@ -38,12 +38,12 @@
 - 权限分配是覆盖式写入，并会阻止清理后导致子角色越权的操作。
 - 删除为级联软删除，根角色和系统内置角色受保护，状态变更与删除会通过 `ctx.Audit` 上报。
 - 无数据库连接时使用内存存储兜底，适合测试和本地运行，但不提供持久化保证。
+- 账号上下文通过 Runtime 的进程内请求桥读取 account 模块，不依赖网关 Host、本机回环地址或 `RUNTIME_ADDR`。
 
 ## Environment Variables
 
-- `RUNTIME_ADDR` — 调用 account 模块接口时的 Runtime 地址，默认从请求 Host 推导，兜底为 `127.0.0.1:8080`。
 - `ADMIN_API_KEY` — 调用 account 模块内部管理接口时附加的 API Key，默认空。
-- `RUNTIME_INTERNAL_TOKEN` — 内部端点校验令牌，默认空且会拒绝内部调用。
+- 内部端点由 runtime 校验令牌后注入 `X-Internal-Authenticated: true`；模块不读取或保存令牌。
 
 ## Dependencies
 

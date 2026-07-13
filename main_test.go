@@ -35,14 +35,11 @@ func TestPluginShutdown(t *testing.T) {
 	}
 }
 
-func TestRuntimeURLFallsBackFromAdminProxyHost(t *testing.T) {
+func TestAdminAccountRequestRequiresInternalBridge(t *testing.T) {
 	p := &RolePlugin{}
-	req := httptest.NewRequest(http.MethodGet, "/api/role/create", nil)
-	req.Host = "omps-shan-admin.link-api.com"
-	got := p.runtimeURL(req, "/api/account/me")
-	want := "http://127.0.0.1:8080/api/account/me"
-	if got != want {
-		t.Fatalf("runtimeURL = %s, want %s", got, want)
+	err := p.doAdminAccountRequest(nil, "/api/account/me", &accountMeResponse{})
+	if err == nil || !strings.Contains(err.Error(), "internal request bridge") {
+		t.Fatalf("doAdminAccountRequest error = %v, want missing internal bridge", err)
 	}
 }
 
@@ -491,7 +488,7 @@ type adminSessionContext struct {
 func withAdminSession(t *testing.T, p *RolePlugin, req *http.Request, ctx adminSessionContext) {
 	t.Helper()
 	token := "token-" + strings.ReplaceAll(ctx.AccountID, "-", "")
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	accountHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/account/detail" && r.URL.Query().Get("operator_session_token") == token && r.URL.Query().Get("account_id") == ctx.AccountID {
 			writeJSON(w, 0, map[string]any{
 				"account_id":     ctx.AccountID,
@@ -513,10 +510,20 @@ func withAdminSession(t *testing.T, p *RolePlugin, req *http.Request, ctx adminS
 			"is_super_admin": ctx.IsSuperAdmin,
 			"roles":          roles,
 		}, "ok")
-	}))
-	t.Cleanup(server.Close)
-	p.runtimeAddr = server.URL
+	})
+	p.internalRequest = newAccountInternalRequest(t, accountHandler)
 	req.Header.Set("X-Admin-Session-Token", token)
+}
+
+func newAccountInternalRequest(t *testing.T, handler http.HandlerFunc) func(context.Context, string, string, []byte, http.Header) (int, http.Header, []byte, error) {
+	t.Helper()
+	return func(ctx context.Context, method, target string, body []byte, headers http.Header) (int, http.Header, []byte, error) {
+		req := httptest.NewRequest(method, target, bytes.NewReader(body)).WithContext(ctx)
+		req.Header = headers.Clone()
+		rec := httptest.NewRecorder()
+		handler(rec, req)
+		return rec.Code, rec.Header().Clone(), rec.Body.Bytes(), nil
+	}
 }
 
 func testAccountRoles(t *testing.T, p *RolePlugin, roleIDs []string) []map[string]string {
