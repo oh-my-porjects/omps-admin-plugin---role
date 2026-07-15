@@ -16,6 +16,10 @@
       "file": "endpoints/get_api_role_list.json"
     },
     {
+      "key": "GET /api/role/batch-lookup",
+      "file": "endpoints/get_api_role_batch_lookup.json"
+    },
+    {
       "key": "GET /api/role/detail",
       "file": "endpoints/get_api_role_detail.json"
     },

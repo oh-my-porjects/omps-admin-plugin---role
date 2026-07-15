@@ -170,6 +170,38 @@ func (p *RolePlugin) handleRoleDetail(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 0, resp, "")
 }
 
+func (p *RolePlugin) handleRoleBatchLookup(w http.ResponseWriter, r *http.Request) {
+	sourceIDs := r.URL.Query()["role_ids"]
+	if len(sourceIDs) == 0 || len(sourceIDs) > 100 {
+		writeJSON(w, 2191, nil, "role_ids 必须包含 1 到 100 个角色 ID")
+		return
+	}
+	seen := map[string]struct{}{}
+	roleIDs := make([]string, 0, len(sourceIDs))
+	for _, roleID := range sourceIDs {
+		roleID = strings.TrimSpace(roleID)
+		if !validRecordID(roleID) {
+			writeJSON(w, 2191, nil, "role_ids 包含格式不合法的角色 ID")
+			return
+		}
+		if _, duplicate := seen[roleID]; duplicate {
+			continue
+		}
+		seen[roleID] = struct{}{}
+		roleIDs = append(roleIDs, roleID)
+	}
+	roles, err := p.activeRolesByIDs(r.Context(), roleIDs)
+	if err != nil {
+		writeJSON(w, 2192, nil, "批量查询角色失败")
+		return
+	}
+	items := make([]map[string]any, 0, len(roles))
+	for _, role := range roles {
+		items = append(items, map[string]any{"role_id": role.ID, "name": role.Name, "status": role.Status})
+	}
+	writeJSON(w, 0, map[string]any{"items": items}, "")
+}
+
 func (p *RolePlugin) handleRoleUpdate(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		RoleID      string `json:"role_id"`

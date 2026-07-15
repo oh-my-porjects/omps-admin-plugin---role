@@ -1,0 +1,24 @@
+{
+  "api": "GET /api/role/batch-lookup",
+  "cases": [
+    {
+      "name": "batch lookup roles",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "GET",
+      "path": "/api/role/batch-lookup?role_ids=00000000-0000-0000-0000-000000000001&role_ids=00000000-0000-0000-0000-000000000003",
+      "expect_status": 200,
+      "expect_business_status": 0,
+      "expect_field": { "status": 0 }
+    },
+    {
+      "name": "batch lookup rejects invalid role id",
+      "actor": "admin",
+      "depends_on": [],
+      "method": "GET",
+      "path": "/api/role/batch-lookup?role_ids=invalid",
+      "expect_status": 200,
+      "expect_business_status": 2191
+    }
+  ]
+}

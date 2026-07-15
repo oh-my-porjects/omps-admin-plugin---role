@@ -468,6 +468,32 @@ func TestHandleAssignPermissionsErrors(t *testing.T) {
 	}
 }
 
+func TestHandleRoleBatchLookup(t *testing.T) {
+	p := testRolePlugin()
+	req := httptest.NewRequest(http.MethodGet, "/api/role/batch-lookup?role_ids="+rootRoleID+"&role_ids="+supportRoleID+"&role_ids="+rootRoleID, nil)
+	recorder := httptest.NewRecorder()
+	p.handleRoleBatchLookup(recorder, req)
+	response := decodeTestResponse(t, recorder)
+	if response.Status != 0 {
+		t.Fatalf("batch lookup status = %d, body=%s", response.Status, recorder.Body.String())
+	}
+	data, ok := response.Data.(map[string]any)
+	if !ok {
+		t.Fatalf("batch lookup data = %#v", response.Data)
+	}
+	items, ok := data["items"].([]any)
+	if !ok || len(items) != 2 {
+		t.Fatalf("batch lookup items = %#v", data["items"])
+	}
+
+	invalid := httptest.NewRequest(http.MethodGet, "/api/role/batch-lookup?role_ids=invalid", nil)
+	invalidRecorder := httptest.NewRecorder()
+	p.handleRoleBatchLookup(invalidRecorder, invalid)
+	if invalidResponse := decodeTestResponse(t, invalidRecorder); invalidResponse.Status != 2191 {
+		t.Fatalf("invalid batch lookup status = %d", invalidResponse.Status)
+	}
+}
+
 func testRolePlugin() *RolePlugin {
 	p := &RolePlugin{logger: slog.Default()}
 	p.ensureMemoryStore()

@@ -125,6 +125,7 @@ var Routes = map[string]http.HandlerFunc{
 	"GET /api/role/hello":              handleHello,
 	"POST /api/role/create":            handleRoleCreate,
 	"GET /api/role/list":               handleRoleList,
+	"GET /api/role/batch-lookup":       handleRoleBatchLookup,
 	"GET /api/role/detail":             handleRoleDetail,
 	"PUT /api/role/update":             handleRoleUpdate,
 	"GET /api/role/children-tree":      handleRoleChildrenTree,
@@ -156,6 +157,10 @@ func handleRoleCreate(w http.ResponseWriter, r *http.Request) {
 
 func handleRoleList(w http.ResponseWriter, r *http.Request) {
 	Plugin.handleRoleList(w, r)
+}
+
+func handleRoleBatchLookup(w http.ResponseWriter, r *http.Request) {
+	Plugin.handleRoleBatchLookup(w, r)
 }
 
 func handleRoleDetail(w http.ResponseWriter, r *http.Request) {

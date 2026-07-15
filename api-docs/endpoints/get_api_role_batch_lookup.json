@@ -1,0 +1,61 @@
+{
+  "method": "GET",
+  "path": "/api/role/batch-lookup",
+  "endpoint_key": "GET /api/role/batch-lookup",
+  "title": "只读批量查询角色展示信息",
+  "description": "供项目后台 V4 关系能力安全批量解析角色 ID；返回角色名称和状态，但不替换原始 role_id。",
+  "auth": "public",
+  "params": [
+    {
+      "name": "role_ids",
+      "type": "array",
+      "in": "query",
+      "required": true,
+      "constraint": "使用重复 query 参数传入 1 到 100 个合法 UUID；重复 ID 自动去重。",
+      "description": "需要批量解析的角色 ID。"
+    }
+  ],
+  "request_example": "/api/role/batch-lookup?role_ids=00000000-0000-0000-0000-000000000001",
+  "response": {
+    "description": "只返回当前存在且未删除的角色。调用方保留未命中的原始 ID。",
+    "data_type": "object",
+    "fields": [
+      {
+        "name": "items",
+        "type": "array",
+        "description": "已命中的角色展示记录。",
+        "fields": [
+          { "name": "role_id", "type": "string", "description": "角色 ID，关系匹配键。" },
+          { "name": "name", "type": "string", "description": "角色名称。" },
+          {
+            "name": "status",
+            "type": "string",
+            "description": "角色状态。",
+            "enum": { "enabled": "启用", "disabled": "停用" }
+          }
+        ]
+      }
+    ],
+    "error_codes": [
+      { "status": 2191, "msg": "请求参数缺失或格式非法。" },
+      { "status": 2192, "msg": "批量查询角色失败。" }
+    ]
+  },
+  "response_example": {
+    "status": 0,
+    "data": {
+      "items": [
+        { "role_id": "00000000-0000-0000-0000-000000000001", "name": "超级管理员", "status": "enabled" }
+      ]
+    },
+    "msg": ""
+  },
+  "rules": [
+    {
+      "category": "security",
+      "title": "关系补全只能调用只读能力",
+      "body": "关系 lookup 只允许使用本 GET query 能力，禁止把写接口配置为展示数据源。",
+      "code_loc": "role_handlers.go"
+    }
+  ]
+}

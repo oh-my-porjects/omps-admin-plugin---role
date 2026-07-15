@@ -221,3 +221,17 @@ func (p *RolePlugin) rolesByIDsForAudit(ctx context.Context, roleIDs []string) (
 	sort.Slice(roles, func(i, j int) bool { return roles[i].ID < roles[j].ID })
 	return roles, nil
 }
+
+func (p *RolePlugin) activeRolesByIDs(ctx context.Context, roleIDs []string) ([]roleRecord, error) {
+	roles, err := p.rolesByIDsForAudit(ctx, roleIDs)
+	if err != nil {
+		return nil, err
+	}
+	active := make([]roleRecord, 0, len(roles))
+	for _, role := range roles {
+		if role.DeletedAt.IsZero() {
+			active = append(active, role)
+		}
+	}
+	return active, nil
+}
